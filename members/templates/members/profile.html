@@ -1,0 +1,60 @@
+{% extends 'members/base.html' %}
+
+{% block title %}የግል ገጽ - {{ member.full_name }}{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-header">
+            <h3>የግል መረጃ ገጽ</h3>
+        </div>
+        <div class="card-body">
+            
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    {% if member.photo %}
+                        <img src="{{ member.photo.url }}" alt="{{ member.full_name }}" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <p>ፎቶ የለም</p>
+                    {% endif %}
+                    <h4 class="card-title">{{ member.full_name }}</h4>
+                    <p class="text-muted">{{ member.party_role|default:"አባል" }}</p>
+                </div>
+                <div class="col-md-8">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>የአባልነት መለያ:</strong> <span class="badge bg-success">{{ member.membership_id }}</span></li>
+                        <li class="list-group-item"><strong>ጾታ:</strong> {{ member.get_gender_display }}</li>
+                        <li class="list-group-item"><strong>የትውልድ ቀን:</strong> {{ member.date_of_birth }}</li>
+                        <li class="list-group-item"><strong>ስልክ ቁጥር:</strong> {{ member.phone_number }}</li>
+                        {% if member.email %}<li class="list-group-item"><strong>ኢሜይል:</strong> {{ member.email }}</li>{% endif %}
+                        <li class="list-group-item"><strong>ሙሉ አድራሻ:</strong> {{ member.address_region }}, {{ member.address_woreda }}</li>
+                        <li class="list-group-item"><strong>የተቀላቀለበት ቀን:</strong> {{ member.join_date }}</li>
+                    </ul>
+                    <a href="{% url 'profile_update' %}" class="btn btn-warning mt-4">መረጃ አስተካክል</a>
+                </div>
+            </div>
+            <hr class="mt-4 mb-4">
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>የስብሰባ ተሳትፎ ታሪክ</h4>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group">
+                                {% for meeting in member.attended_meetings.all %}
+                                <li class="list-group-item">
+                                    <strong>{{ meeting.title }}</strong> - {{ meeting.meeting_date|date:"M d, Y" }} 
+                                    <span class="text-muted">({{ meeting.location }})</span>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item text-center">ምንም አይነት የተሳትፎ ታሪክ አልተገኘም።</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+    </div>
+{% endblock %}

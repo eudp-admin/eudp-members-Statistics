@@ -1,0 +1,14 @@
+{% extends 'members/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container text-center py-5">
+    <img src="{% static 'images/logo.png' %}" alt="የፓርቲው አርማ" class="mb-4" style="max-width: 150px;">
+    <h1 class="display-4">እንኳን ወደ ኢትዮጵያ አንድነት እና ልማት ፓርቲ በደህና መጡ</h1>
+    <p class="lead">ለሀገራችን ብልጽግና በጋራ እንስራ! የኛን ፓርቲ በመቀላቀል የበኩልዎን አስተዋጽኦ ያበርክቱ።</p>
+    <hr class="my-4">
+    <p>አባል ከሆኑ እባክዎ ወደ ስርዓቱ ይግቡ። አዲስ ለመሆን ከፈለጉ ይመዝገቡ።</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">ይግቡ</a>
+    <a class="btn btn-success btn-lg" href="{% url 'register_member' %}" role="button">አባል ይሁኑ</a>
+</div>
+{% endblock %}

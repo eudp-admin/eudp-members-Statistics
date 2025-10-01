@@ -1,0 +1,161 @@
+{% extends 'members/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    {{ bar_chart_labels|json_script:"bar-chart-labels" }}
+    {{ bar_chart_data|json_script:"bar-chart-data" }}
+
+    {{ pie_chart_labels|json_script:"pie-chart-labels" }}
+    {{ pie_chart_data|json_script:"pie-chart-data" }}
+
+
+    <h1 class="mb-4">{{ page_title }}</h1>
+
+    <div class="row">
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">አጠቃላይ የአባላት ብዛት</h5>
+                    <p class="card-text fs-2">{{ total_members }}</p>
+                </div>
+            </div>
+        </div>
+        {% for gender in gender_distribution %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card text-white {% if gender.gender == 'Male' %}bg-info{% else %}bg-success{% endif %}">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {% if gender.gender == 'Male' %}ወንድ{% else %}ሴት{% endif %} አባላት
+                        </h5>
+                        <p class="card-text fs-2">{{ gender.count }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+ <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">አባላት የተቀላቀሉበት ዓመት (ባር ግራፍ)</div>
+                <div class="card-body">
+                    <canvas id="membersByYearChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">የአባላት ስርጭት በጾታ (ፓይ ቻርት)</div>
+                <div class="card-body">
+                    <canvas id="genderPieChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h4>አባላት በየክልሉ</h4>
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ክልል</th>
+                        <th>የአባላት ብዛት</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for region in members_by_region %}
+                    <tr>
+                        <td>{{ region.address_region }}</td>
+                        <td>{{ region.count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="2">ምንም መረጃ አልተገኘም።</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h4>በቅርብ ጊዜ የተመዘገቡ አባላት</h4>
+            <ul class="list-group">
+                {% for member in recent_members %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="{% url 'member_detail' member.pk %}">{{ member.full_name }}</a>
+                        <span class="badge bg-secondary rounded-pill">{{ member.join_date|date:"M d, Y" }}</span>
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">ምንም አዲስ አባል የለም።</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 1. Bar Chart: Members by Year
+        // Get the data from the script tags created by json_script
+        const barLabelsElement = document.getElementById('bar-chart-labels');
+        const barDataElement = document.getElementById('bar-chart-data');
+        
+        // Parse the JSON content into JavaScript variables
+        const bar_chart_labels = JSON.parse(barLabelsElement.textContent);
+        const bar_chart_data = JSON.parse(barDataElement.textContent);
+
+        const ctxBar = document.getElementById('membersByYearChart');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                // Use the parsed JavaScript variables
+                labels: bar_chart_labels,
+                datasets: [{
+                    label: 'የተመዝጋቢዎች ብዛት',
+                    data: bar_chart_data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // 2. Pie Chart: Gender Distribution
+        // Get the data from the script tags created by json_script
+        const pieLabelsElement = document.getElementById('pie-chart-labels');
+        const pieDataElement = document.getElementById('pie-chart-data');
+
+        // Parse the JSON content into JavaScript variables
+        const pie_chart_labels = JSON.parse(pieLabelsElement.textContent);
+        const pie_chart_data = JSON.parse(pieDataElement.textContent);
+
+        const ctxPie = document.getElementById('genderPieChart');
+        new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                // Use the parsed JavaScript variables
+                labels: pie_chart_labels,
+                datasets: [{
+                    label: 'የአባላት ብዛት',
+                    data: pie_chart_data,
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.6)', // Blue for Male
+                        'rgba(75, 192, 192, 0.6)'  // Green for Female
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            }
+        });
+    </script>
+{% endblock %}

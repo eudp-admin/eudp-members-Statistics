@@ -1,0 +1,19 @@
+{% extends "members/base.html" %}
+
+{% block title %}ከስርዓቱ ወጥተዋል{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card text-center">
+            <div class="card-header">
+                <h2>ከስርዓቱ ወጥተዋል</h2>
+            </div>
+            <div class="card-body">
+                <p>ከአገልግሎታችን ስለተጠቀሙ እናመሰግናለን።</p>
+                <a href="{% url 'login' %}" class="btn btn-primary">እንደገና ይግቡ</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

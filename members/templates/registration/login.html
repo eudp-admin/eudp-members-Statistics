@@ -1,0 +1,37 @@
+{% extends "members/base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}ወደ ስርዓቱ ይግቡ{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">ወደ ስርዓቱ ይግቡ</h3>
+            </div>
+            <div class="card-body">
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        የተጠቃሚ ስም ወይም የይለፍ ቃልዎ ትክክል አይደለም። እባክዎ እንደገና ይሞክሩ።
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">የተጠቃሚ ስም (Username)</label>
+                        <input type="text" name="username" class="form-control" id="id_username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">የይለፍ ቃል (Password)</label>
+                        <input type="password" name="password" class="form-control" id="id_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">ይግቡ</button>
+                        <p class="mt-3">
+        <a href="{% url 'password_reset' %}">የይለፍ ቃልዎን ረስተዋል?</a>
+    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

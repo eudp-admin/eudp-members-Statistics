@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}የፖለቲካ ፓርቲ የአባላት አስተዳደር{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Font and Custom Styles -->
+    <link href="https://fonts.googleapis.com/css2?family=Abyssinica+SIL&display=swap" rel="stylesheet">
+    <style>
+        body, h1, h2, h3, h4, h5, h6, .navbar-brand, .nav-link, .btn, .card-title {
+            font-family: 'Abyssinica SIL', serif;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+<a class="navbar-brand" href="{% url 'member_list' %}">
+    <img src="{% static 'images/logo.png' %}" alt="የፓርቲው አርማ" width="30" height="30" class="d-inline-block align-text-top">
+    የኢትዮጵያ አንድነት እና ልማት ፓርቲ(ኢአልፓ)
+</a>            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- base.html -->
+<ul class="navbar-nav ms-auto">
+    {% if user.is_authenticated %}
+        <!-- This part is for LOGGED-IN users -->
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'announcements' %}">ማስታወቂያዎች</a>
+        </li>
+        {% if user.is_staff %}
+            <!-- ***** LINKS FOR STAFF/ADMINS ONLY ***** -->
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'member_list' %}">የአባላት ዝርዝር</a>
+            </li>
+                <li class="nav-item">
+        <a class="nav-link" href="{% url 'dashboard' %}">ዳሽቦርድ</a> <!-- ይህንን ሊንክ ጨምር -->
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/" target="_blank">Admin Panel</a>
+            </li>
+        {% else %}
+            <!-- ***** LINKS FOR REGULAR MEMBERS ONLY ***** -->
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'profile' %}">የግል ገፄ</a>
+            </li>
+        {% endif %}
+
+        <!-- Links for ALL logged-in users (both staff and regular members) -->
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                እንኳን ደህና መጣህ({{ user.username }})
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                <li><a class="dropdown-item" href="{% url 'password_change' %}">የይለፍ ቃል ቀይር</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form action="{% url 'logout' %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item">ውጣ</button>
+                    </form>
+                </li>
+            </ul>
+        </li>
+
+    {% else %}
+        <!-- This part is for LOGGED-OUT users (guests) -->
+        <li class="nav-item">
+            <a class="nav-link" href="#">ስለ እኛ</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'login' %}">ይግቡ</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link btn btn-success text-white" href="{% url 'register_member' %}">አባል ይሁኑ</a>
+        </li>
+    {% endif %}
+</ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+        {% block content %}
+        <!-- የሌሎች ገጾች ይዘት እዚህ ጋር ይገባል -->
+        {% endblock %}
+    </main>
+
+    <footer class="bg-light text-center text-lg-start mt-5">
+        <div class="text-center p-3" style="background-color: rgba(0, 0, 0, 0.05);">
+            © 2024 የኢትዮጵያ አንድነት እና ልማት ፓርቲ(ኢአልፓ)።ሁሉም መብቶች የተጠበቁ ናቸው
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
