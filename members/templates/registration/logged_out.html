@@ -3,15 +3,92 @@
 {% block title %}ከስርዓቱ ወጥተዋል{% endblock %}
 
 {% block content %}
+<style>
+    /* ከቤዝ ቴምፕሌት ላይ ያሉትን ቀለሞች መጠቀም */
+    :root {
+        --party-dark-bg: #2c3e50;
+        --party-primary-color: #1e8449;
+        --party-secondary-color: #176638;
+        --party-background: #f7f9fc;
+    }
+
+    /* የካርድ ማስተካከያ: ክብ ጠርዝ እና ጥላ */
+    .card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        overflow: hidden; 
+    }
+
+    /* የካርድ ራስጌ ቀለም ማስተካከያ */
+    .card-header {
+        background-color: var(--party-dark-bg); /* ጥልቀት ያለው ሰማያዊ */
+        color: white;
+        border-bottom: none;
+        padding: 15px 20px;
+    }
+
+    .card-header h2 {
+        margin-bottom: 0;
+        font-weight: 600;
+    }
+
+    /* ዋናው አዝራር ማስተካከያ */
+    .btn-primary {
+        background-color: var(--party-primary-color);
+        border-color: var(--party-primary-color);
+        color: white;
+        font-weight: bold;
+        padding: 10px 30px;
+        border-radius: 50px; 
+        transition: background-color 0.3s ease;
+        margin-bottom: 15px; /* ከሊንኮቹ በፊት ክፍተት */
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--party-secondary-color);
+        border-color: var(--party-secondary-color);
+    }
+    
+    /* ተጨማሪ ሊንኮች ዘይቤ */
+    .additional-links a {
+        display: block;
+        margin-top: 10px;
+        color: #555;
+        font-weight: 500;
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+    .additional-links a:hover {
+        color: var(--party-primary-color);
+        text-decoration: underline;
+    }
+</style>
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-7 col-lg-6"> 
         <div class="card text-center">
             <div class="card-header">
                 <h2>ከስርዓቱ ወጥተዋል</h2>
             </div>
-            <div class="card-body">
-                <p>ከአገልግሎታችን ስለተጠቀሙ እናመሰግናለን።</p>
-                <a href="{% url 'login' %}" class="btn btn-primary">እንደገና ይግቡ</a>
+            <div class="card-body py-5">
+                <p class="lead mb-4" style="color: #34495e; font-weight: 500;">
+                    <i class="fas fa-check-circle me-2" style="color: var(--party-primary-color);"></i>
+                    ከአገልግሎታችን በሰላም ወጥተዋል። ስለተጠቀሙ እናመሰግናለን።
+                </p>
+                
+                <a href="{% url 'login' %}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt me-2"></i> እንደገና ይግቡ
+                </a>
+
+                <div class="additional-links mt-3 pt-3 border-top">
+                    <a href="{% url 'landing_page' %}">
+                        <i class="fas fa-home me-2"></i> ወደ መነሻ ገጽ ይመለሱ
+                    </a>
+                    <a href="https://eudp-com.netlify.app/" target="_blank"> 
+                        <i class="fas fa-globe me-2"></i> ወደ ፓርቲው ይፋዊ ድረ-ገጽ ይሂዱ
+                    </a>
+                </div>
             </div>
         </div>
     </div>
