@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     # --- Cloudinary & Storage Integration ---
     'cloudinary',
     'cloudinary_storage',
-    # 'django_storages', # Only needed if you were using AWS S3, but generally good to include
 
     # Django Built-in Apps
     'django.contrib.admin',
@@ -140,7 +139,8 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # FIX 3: Configure WhiteNoise to serve and compress static files.
-# STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+# Correction: This must be uncommented for WhiteNoise to work in production
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 
 # =========================================================================
@@ -174,9 +174,26 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'login_redirect'
 
-# Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@yourparty.com'
+
+# =========================================================================
+# --- Email Configuration (Development vs. Production) ---
+# =========================================================================
+
+if 'RENDER' in os.environ:
+    # --- PRODUCTION EMAIL SETTINGS (GMAIL/SMTP) ---
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = 'smtp.gmail.com'
+    EMAIL_PORT = 587
+    EMAIL_USE_TLS = True
+    # Ensure these are set in your Render environment variables
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+else:
+    # --- DEVELOPMENT SETTINGS ---
+    # Console backend prints emails to the terminal, good for local testing
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'development@example.com'
 
 # Crispy Forms Settings
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
