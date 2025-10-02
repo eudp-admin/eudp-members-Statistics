@@ -145,7 +145,7 @@ MEDIA_URL = '/media/'
 
 # FIX 4: Simplified MEDIA_ROOT logic using Path, and ensuring we default to local dev.
 if 'RENDER' in os.environ:
-    MEDIA_ROOT = '/var/data/media'
+    MEDIA_ROOT = '/var/data/media_root'
 else:
     MEDIA_ROOT = BASE_DIR / 'media'
 
