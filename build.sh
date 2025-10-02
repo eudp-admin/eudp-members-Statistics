@@ -10,4 +10,3 @@ python manage.py collectstatic --no-input
 
 # 3. የዳታቤዝ ለውጦችን ይተግብሩ
 python manage.py migrate
-python manage.py createsuperuser --noinput
