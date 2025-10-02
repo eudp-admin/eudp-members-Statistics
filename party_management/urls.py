@@ -26,5 +26,5 @@ urlpatterns = [
     path('app/', include('members.urls')), # የኛ መተግበሪያ ከ /app/ ጀምሮ
     path('accounts/', include('django.contrib.auth.urls')),
 ]
-if settings.DEBUG:
+if settings.DEBUG is False: # Check if we are in production
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
