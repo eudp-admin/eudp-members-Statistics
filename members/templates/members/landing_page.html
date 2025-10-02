@@ -1,14 +1,137 @@
 {% extends 'members/base.html' %}
 {% load static %}
 
+{% block title %}እንኳን ደህና መጡ{% endblock %}
+
 {% block content %}
-<div class="container text-center py-5">
-    <img src="{% static 'images/logo.png' %}" alt="የፓርቲው አርማ" class="mb-4" style="max-width: 150px;">
-    <h1 class="display-4">እንኳን ወደ ኢትዮጵያ አንድነት እና ልማት ፓርቲ በደህና መጡ</h1>
-    <p class="lead">ለሀገራችን ብልጽግና በጋራ እንስራ! የኛን ፓርቲ በመቀላቀል የበኩልዎን አስተዋጽኦ ያበርክቱ።</p>
-    <hr class="my-4">
-    <p>አባል ከሆኑ እባክዎ ወደ ስርዓቱ ይግቡ። አዲስ ለመሆን ከፈለጉ ይመዝገቡ።</p>
-    <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">ይግቡ</a>
-    <a class="btn btn-success btn-lg" href="{% url 'register_member' %}" role="button">አባል ይሁኑ</a>
+<style>
+    /* ከቤዝ ቴምፕሌት ላይ ያሉትን ቀለሞች መጠቀም */
+    :root {
+        --party-dark-bg: #2c3e50;
+        --party-primary-color: #1e8449; /* አረንጓዴ */
+        --party-secondary-color: #176638;
+        --party-background: #f7f9fc;
+    }
+
+    /* አሁን ገጹ ሙሉ ስፋት እንዲይዝ 'landing-full-width' የሚባል አዲስ ክፍል ተፈጥሯል */
+    .landing-full-width {
+        /* የካርዱን ዳራ በገጹ ዳራ መተካት */
+        background-color: var(--party-background); 
+        padding-top: 80px; /* ከላይ ትልቅ ክፍተት */
+        padding-bottom: 80px; /* ከታች ትልቅ ክፍተት */
+        text-align: center; /* ጽሑፉን መሃል ላይ ማድረግ */
+        min-height: 80vh; /* ገጹ ቢያንስ 80% ስክሪን እንዲይዝ */
+    }
+
+    /* የይዘት ሳጥን: ጽሑፉ በጎን እንዳይለጠጥ ይከላከላል */
+    .landing-content-box {
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* የገጹ ርዕስ */
+    .landing-content-box h1 {
+        color: var(--party-dark-bg);
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    /* የካርድ መለያ (Lead) */
+    .landing-content-box p.lead {
+        color: #555;
+        font-size: 1.3rem;
+    }
+
+    /* አዝራሮች */
+    .landing-content-box .btn {
+        font-weight: bold;
+        padding: 12px 30px;
+        border-radius: 50px; /* ክብ ቅርጽ */
+        transition: transform 0.2s;
+        margin: 5px 10px;
+    }
+
+    /* 'ይግቡ' አዝራር (ዋናው ቀለም - አረንጓዴ) */
+    .btn-login {
+        background-color: transparent;
+        color: var(--party-dark-bg);
+        border: 2px solid var(--party-dark-bg);
+    }
+    .btn-login:hover {
+        background-color: var(--party-dark-bg);
+        color: white;
+        border-color: var(--party-dark-bg);
+        transform: translateY(-2px);
+    }
+
+    /* 'አባል ይሁኑ' አዝራር (ሁለተኛው ቀለም - ሰማያዊ/ጨለማ) */
+    .btn-register {
+        background-color: transparent;
+        color: var(--party-dark-bg);
+        border: 2px solid var(--party-dark-bg);
+    }
+    .btn-register:hover {
+        background-color: var(--party-dark-bg);
+        color: white;
+        border-color: var(--party-dark-bg);
+        transform: translateY(-2px);
+    }
+
+    /* 'ወደ ድረ-ገጽ' አዝራር (ንጹህ መልክ) */
+    .btn-website {
+        background-color: transparent;
+        color: var(--party-dark-bg);
+        border: 2px solid var(--party-dark-bg);
+    }
+    .btn-website:hover {
+        background-color: var(--party-dark-bg);
+        color: white;
+        border-color: var(--party-dark-bg);
+    }
+
+    /* የሎጎ ዘይቤ */
+    .landing-logo {
+        max-width: 130px;
+        filter: drop-shadow(0 0 5px rgba(0,0,0,0.1));
+    }
+
+    /* የቤዝ ቴምፕሌት main-content ኮንቴይነሩን ሙሉ ስፋት እንዲሆን ማስወገድ */
+    .main-content {
+        padding: 0;
+        margin: 0;
+        max-width: 100% !important;
+    }
+</style>
+
+<div class="landing-full-width">
+    <div class="landing-content-box">
+        <img src="{% static 'images/logo.png' %}" alt="የፓርቲው አርማ" class="mb-4 landing-logo">
+        
+        <h1 class="display-5">እንኳን ወደ ኢትዮጵያ አንድነት እና ልማት ፓርቲ በደህና መጡ</h1>
+        
+        <p class="lead">
+            ለሀገራችን ልማት በጋራ እንስራ! የኛን ፓርቲ በመቀላቀል የበኩልዎን አስተዋጽኦ ያበርክቱ።
+        </p>
+        
+        <hr class="my-4" style="max-width: 50%; margin: 2rem auto; border-top: 1px solid rgba(0,0,0,0.1);">
+        
+        <p class="mb-4">አባል ከሆኑ እባክዎ ወደ ስርዓቱ ይግቡ። አዲስ ለመሆን ከፈለጉ ይመዝገቡ።</p>
+        
+        <div class="d-flex flex-wrap justify-content-center">
+            <a class="btn btn-login btn-lg" href="{% url 'login' %}" role="button">
+                <i class="fas fa-sign-in-alt me-2"></i> ይግቡ
+            </a>
+            
+            <a class="btn btn-register btn-lg" href="{% url 'register_member' %}" role="button">
+                <i class="fas fa-edit me-2"></i> አባል ይሁኑ
+            </a>
+            
+            <a class="btn btn-website btn-lg" href="https://eudp-com.netlify.app/" target="_blank" role="button">
+                <i class="fas fa-globe me-2"></i> ወደ ፓርቲው ድረ-ገጽ
+            </a>
+        </div>
+    </div>
 </div>
+
 {% endblock %}
