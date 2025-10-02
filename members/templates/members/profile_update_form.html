@@ -3,18 +3,93 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
+<style>
+    /* ከቤዝ ቴምፕሌት ላይ ያሉትን ቀለሞች መጠቀም */
+    :root {
+        --party-dark-bg: #2c3e50; /* ለርዕስ እና ራስጌ */
+        --party-primary-color: #1e8449; /* አረንጓዴ (ለዋና አዝራር) */
+        --party-secondary-color: #176638;
+        --party-background: #f7f9fc;
+    }
+
+    /* አጠቃላይ የካርድ ዘይቤ */
+    .card-modern {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    /* የካርድ ራስጌ ዘይቤ */
+    .card-header-styled {
+        background-color: var(--party-dark-bg);
+        color: white;
+        padding: 18px 25px;
+        font-weight: 600;
+        border-bottom: none;
+    }
+    .card-header-styled h3 {
+        margin-bottom: 0;
+        font-weight: 700;
+    }
+
+    /* የፎርም አዝራሮች */
+    .btn-submit {
+        background-color: var(--party-primary-color);
+        border-color: var(--party-primary-color);
+        color: white;
+        font-weight: bold;
+        padding: 10px 25px;
+        border-radius: 50px; /* ክብ ቅርጽ */
+        transition: background-color 0.3s ease;
+        margin-right: 10px;
+    }
+    .btn-submit:hover {
+        background-color: var(--party-secondary-color);
+        border-color: var(--party-secondary-color);
+    }
+    
+    /* ሰርዝ / ተመለስ አዝራር */
+    .btn-cancel {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: white;
+        font-weight: 500;
+        padding: 10px 25px;
+        border-radius: 50px;
+    }
+    .btn-cancel:hover {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+    
+    /* Crispy Form መለያዎች (Labels) */
+    .form-group label {
+        font-weight: 600;
+        color: #34495e;
+    }
+
+</style>
+
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">{{ page_title }}</h3>
+            <div class="card card-modern">
+                <div class="card-header card-header-styled">
+                    <h3 class="card-title"><i class="fas fa-edit me-2"></i> {{ page_title }}</h3>
                 </div>
-                <div class="card-body">
+                <div class="card-body py-4">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        {{ form|crispy }}
-                        <button type="submit" class="btn btn-primary mt-3">አስቀምጥ</button>
-                        <a href="{% url 'profile' %}" class="btn btn-secondary mt-3">ሰርዝ</a>
+                        {{ form|crispy }} 
+                        
+                        <div class="mt-4 pt-2 border-top">
+                            <button type="submit" class="btn btn-submit">
+                                <i class="fas fa-save me-2"></i> አስቀምጥ
+                            </button>
+                            <a href="{% url 'profile' %}" class="btn btn-cancel">
+                                <i class="fas fa-times me-2"></i> ሰርዝ / ተመለስ
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
