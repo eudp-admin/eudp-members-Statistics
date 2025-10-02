@@ -3,64 +3,179 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">{{ page_title }}</h1>
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>የአባላት ማጣሪያ</h5>
-        </div>
-        <div class="card-body">
-            <form method="get" action="">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <input type="text" name="query" class="form-control" placeholder="በስም ወይም በመለያ ቁጥር ፈልግ" value="{{ request.GET.query }}">
-                    </div>
-                    <div class="col-md-3">
-                        <input type="text" name="region" class="form-control" placeholder="በክልል ፈልግ" value="{{ request.GET.region }}">
-                    </div>
-                    <div class="col-md-2">
-                        <input type="date" name="start_date" class="form-control" title="የተቀላቀለበት መጀመሪያ ቀን" value="{{ request.GET.start_date }}">
-                    </div>
-                    <div class="col-md-2">
-                        <input type="date" name="end_date" class="form-control" title="የተቀላቀለበት መጨረሻ ቀን" value="{{ request.GET.end_date }}">
-                    </div>
-                    <div class="col-md-1">
-                        <button type="submit" class="btn btn-primary w-100">ፈልግ</button>
-                    </div>
-                </div>
-            </form>
-        </div>
+<style>
+    /* ከቤዝ ቴምፕሌት ላይ ያሉትን ቀለሞች መጠቀም */
+    :root {
+        --party-dark-bg: #2c3e50; /* ለርዕስ እና ጠንካራ ጽሑፍ */
+        --party-primary-color: #1e8449; /* አረንጓዴ */
+        --party-secondary-color: #176638;
+        --party-background: #f7f9fc;
+    }
+
+    /* አጠቃላይ የካርድ ዘይቤ */
+    .card-modern {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    /* የካርድ ራስጌ ዘይቤ */
+    .card-header-styled {
+        background-color: var(--party-dark-bg);
+        color: white;
+        padding: 15px 25px;
+        font-weight: 600;
+        border-bottom: none;
+    }
+    .card-header-styled h5 {
+        margin-bottom: 0;
+    }
+    
+    /* ፈልግ/አውርድ አዝራሮች */
+    .btn-search, .btn-export {
+        font-weight: 600;
+        border-radius: 50px;
+        padding: 8px 18px;
+        transition: all 0.3s;
+        display: flex; /* አዝራር ውስጥ ያለው ጽሑፍ እንዲሰለፍ */
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .btn-search {
+        background-color: var(--party-dark-bg);
+        border-color: var(--party-dark-bg);
+    }
+    .btn-search:hover {
+        background-color: #34495e;
+        border-color: #34495e;
+    }
+
+    .btn-export {
+        background-color: var(--party-primary-color);
+        border-color: var(--party-primary-color);
+        color: white;
+    }
+    .btn-export:hover {
+        background-color: var(--party-secondary-color);
+        border-color: var(--party-secondary-color);
+    }
+    
+    /* ሠንጠረዥ ዘይቤ */
+    .table-custom thead th {
+        background-color: var(--party-dark-bg) !important;
+        color: white;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    .table-custom tbody tr:hover {
+        background-color: var(--party-background);
+    }
+    
+    /* የመለያ ቁጥር ባጅ */
+    .badge-membership {
+        background-color: var(--party-primary-color) !important;
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+        border-radius: 50px;
+    }
+    
+    /* ዝርዝር እይ አዝራር */
+    .btn-detail {
+        background-color: #5d9cec;
+        border-color: #5d9cec;
+        font-weight: 500;
+        border-radius: 50px;
+        padding: 5px 12px;
+        transition: all 0.3s;
+    }
+    .btn-detail:hover {
+        background-color: #4a8ee0;
+        border-color: #4a8ee0;
+    }
+</style>
+
+<h1 class="mb-4" style="color: var(--party-dark-bg); font-weight: 700;">
+    <i class="fas fa-list-alt me-2"></i> {{ page_title }}
+</h1>
+
+<div class="card card-modern mb-4">
+    <div class="card-header card-header-styled">
+        <h5><i class="fas fa-filter me-2"></i> የአባላት ማጣሪያ</h5>
     </div>
-    <div class="d-flex justify-content-end mb-3">
-    <a href="{% url 'export_members_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success">
-        ሪፖርት በ Excel (CSV) አውርድ
+    <div class="card-body">
+        <form method="get" action="">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label visually-hidden">በስም ወይም በመለያ ቁጥር ፈልግ</label>
+                    <input type="text" name="query" class="form-control" placeholder="በስም ወይም በመለያ ቁጥር ፈልግ" value="{{ request.GET.query }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label visually-hidden">በክልል ፈልግ</label>
+                    <input type="text" name="region" class="form-control" placeholder="በክልል ፈልግ" value="{{ request.GET.region }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">ከ ቀን ጀምሮ</label>
+                    <input type="date" name="start_date" class="form-control" title="የተቀላቀለበት መጀመሪያ ቀን" value="{{ request.GET.start_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small text-muted">እስከ ቀን ድረስ</label>
+                    <input type="date" name="end_date" class="form-control" title="የተቀላቀለበት መጨረሻ ቀን" value="{{ request.GET.end_date }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-search w-100">
+                        <i class="fas fa-search me-1"></i> ፈልግ
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end mb-3">
+    <a href="{% url 'export_members_csv' %}?{{ request.GET.urlencode }}" class="btn btn-export">
+        <i class="fas fa-file-excel me-2"></i> ሪፖርት በ Excel (CSV) አውርድ
     </a>
 </div>
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th scope="col">ሙሉ ስም</th>
-                    <th scope="col">የአባልነት መለያ</th>
-                    <th scope="col">ስልክ ቁጥር</th>
-                    <th scope="col">ክልል</th>
-                    <th scope="col">ዝርዝር መረጃ</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for member in members %}
-                <tr>
-                    <td>{{ member.full_name }}</td>
-                    <td><span class="badge bg-secondary">{{ member.membership_id }}</span></td>
-                    <td>{{ member.phone_number }}</td>
-                    <td>{{ member.address_region }}</td>
-                    <td><a href="{% url 'member_detail' member.pk %}" class="btn btn-primary btn-sm">ዝርዝር እይ</a></td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">ምንም አይነት አባል አልተገኘም።</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+<div class="card card-modern">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-custom mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">ሙሉ ስም</th>
+                        <th scope="col">የአባልነት መለያ</th>
+                        <th scope="col">ስልክ ቁጥር</th>
+                        <th scope="col">ክልል</th>
+                        <th scope="col" class="text-center">ድርጊት</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr>
+                        <td><a href="{% url 'member_detail' member.pk %}" style="color: var(--party-dark-bg); text-decoration: none;">{{ member.full_name }}</a></td>
+                        <td><span class="badge badge-membership">{{ member.membership_id }}</span></td>
+                        <td>{{ member.phone_number }}</td>
+                        <td>{{ member.address_region }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'member_detail' member.pk %}" class="btn btn-detail btn-sm">
+                                <i class="fas fa-eye me-1"></i> ዝርዝር እይ
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                            <i class="fas fa-exclamation-circle me-2"></i> ምንም አይነት አባል አልተገኘም።
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
+</div>
+
 {% endblock %}
