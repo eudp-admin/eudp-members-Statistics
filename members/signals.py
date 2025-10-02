@@ -49,7 +49,7 @@ def create_user_for_member(sender, instance, created, **kwargs):
 የተጠቃሚ ስም (Username): {username}
 የይለፍ ቃል (Password): {password}
 
-ሎግอิน ካደረጉ በኋላ ወዲያውኑ የይለፍ ቃልዎን እንዲቀይሩ እንመክራለን።
+ሎግኢን ካደረጉ በኋላ ወዲያውኑ የይለፍ ቃልዎን እንዲቀይሩ እንመክራለን።
 
 ከሰላምታ ጋር,
 የፓርቲው አስተዳደር
