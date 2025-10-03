@@ -11,7 +11,10 @@ from django.http import HttpResponse
 import json
 import csv
 from datetime import datetime
-
+import qrcode
+import io
+import base64
+from django.urls import reverse 
 # Import models and forms
 from .models import Member, Announcement
 from .forms import MemberCreationForm, MemberUpdateForm
