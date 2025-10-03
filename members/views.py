@@ -153,10 +153,26 @@ def member_list(request):
 @login_required
 def member_id_card(request, pk):
     member = get_object_or_404(Member, pk=pk)
+
+    # --- አዲስ የ QR ኮድ አመንጪ አመክንዮ ---
+    # 1. QR ኮዱ የሚያመለክተውን ሙሉ URL መፍጠር
+    qr_url = request.build_absolute_uri(reverse('member_detail', args=[member.pk]))
+
+    # 2. የ QR ኮዱን ምስል በ memory ውስጥ መፍጠር
+    qr_image = qrcode.make(qr_url, box_size=4, border=1)
+    
+    # 3. ምስሉን ወደ memory buffer ማስቀመጥ
+    buffer = io.BytesIO()
+    qr_image.save(buffer, format='PNG')
+    
+    # 4. የምስሉን ዳታ ወደ Base64 string መቀየር
+    qr_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
     context = {
-        'member': member
+        'member': member,
+        'qr_image_base64': qr_image_base64, # የምስሉን ዳታ ወደ ቴምፕሌቱ መላክ
     }
-    return render(request, 'members/id_card_template.html', context)    
+    return render(request, 'members/id_card_template.html', context)  
 @login_required
 def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
