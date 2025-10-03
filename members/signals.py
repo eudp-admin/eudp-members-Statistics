@@ -12,9 +12,8 @@ import logging
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-def generate_random_password(length=12): # Use a secure length
+def generate_random_password(length=12): # Increased length for security
     """Generates a random, secure password."""
-    # Using letters, digits, and punctuation for high security
     characters = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(characters) for i in range(length))
 
@@ -22,12 +21,13 @@ def generate_random_password(length=12): # Use a secure length
 def create_user_for_member(sender, instance, created, **kwargs):
     """
     Signal to create a User, link it to a new Member, and SMS the password
-    using Twilio.
+    using Twilio, after formatting the phone number to E.164.
     """
     if not created:
         return # Only run when a Member object is first created
 
     # Prevents infinite loop if the Member object's 'user' field is saved *after* creation
+    # Also handles cases where the user might have been created manually.
     if instance.user:
         return
 
@@ -38,47 +38,64 @@ def create_user_for_member(sender, instance, created, **kwargs):
         logger.warning(f"User creation skipped: User with phone number '{username}' already exists.")
         return
 
-    # 2. Handle Password Generation and SMS Sending
+    # 2. Format Phone Number for Twilio (E.164 Standard)
+    raw_phone_number = instance.phone_number
+    
+    # a. Remove any spaces or dashes from the raw number
+    formatted_number = raw_phone_number.replace(" ", "").replace("-", "")
+    
+    # b. Apply Ethiopian E.164 formatting (+251...)
+    if formatted_number.startswith('09'):
+        # e.g., '0911...' -> '+251911...'
+        formatted_number = '+251' + formatted_number[1:]
+    elif formatted_number.startswith('9') and len(formatted_number) == 9:
+        # e.g., '911...' (9 digits) -> '+251911...'
+        formatted_number = '+251' + formatted_number
+    elif formatted_number.startswith('+251'):
+        # Already in correct E.164 format, do nothing
+        pass
+    else:
+        # If the format is still invalid, stop the process and log it
+        logger.error(f"INVALID PHONE FORMAT for SMS: {raw_phone_number}. Cannot send SMS/create user.")
+        return
+
+    # 3. Handle Password Generation and SMS Sending
     password = generate_random_password()
     
-    # --- Twilio SMS Integration ---
     try:
         if not all([settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN, settings.TWILIO_PHONE_NUMBER]):
             raise EnvironmentError("Twilio credentials are not fully set in settings.")
 
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         
-        # IMPORTANT: Ensure the phone_number is in E.164 format (e.g., +251911123456)
-        to_phone_number = instance.phone_number
-        
         message_body = f"""እንኳን ደህና መጡ!
 የመግቢያ መረጃዎ:
 የተጠቃሚ ስም: {username}
 የይለፍ ቃል: {password}
-በመጀመሪያው ሎግኢን የይለፍ ቃልዎን ይቀይሩ።"""
+በመጀመሪያው ሎግኢን የይለፍ ቃልዎን እንዲቀይሩ እንመክራለን።"""
         
         message = client.messages.create(
             body=message_body,
             from_=settings.TWILIO_PHONE_NUMBER,
-            to=to_phone_number
+            to=formatted_number # 👈 የተስተካከለውን ቁጥር ይጠቀማል
         )
         
-        logger.info(f"SMS successfully sent to {to_phone_number} with SID: {message.sid}")
+        logger.info(f"SMS successfully sent to {formatted_number} with SID: {message.sid}")
         
-        # 3. Create the User (ONLY if SMS was successfully initiated)
+        # 4. Create the User (ONLY if SMS was successfully initiated)
         user = User.objects.create_user(
             username=username,
-            email=instance.email if instance.email else '',
+            email=instance.email if instance.email else '', # Use email if available
             password=password
         )
 
-        # 4. Link the User to the Member profile and SAVE (CRITICAL FIX IMPLEMENTATION)
-        # CRITICAL FIX: To prevent an infinite recursion loop when instance.save() is called,
-        # we temporarily disconnect and reconnect the signal.
+        # 5. Link the User to the Member profile and SAVE (CRITICAL FIX)
+        # CRITICAL FIX: Temporarily disconnect the signal to prevent infinite recursion
         post_save.disconnect(create_user_for_member, sender=Member)
         
         instance.user = user
-        instance.save()
+        # This instance.save() would re-trigger the signal without the disconnect.
+        instance.save() 
         
         # Reconnect the signal immediately
         post_save.connect(create_user_for_member, sender=Member)
@@ -87,7 +104,6 @@ def create_user_for_member(sender, instance, created, **kwargs):
         
     except Exception as e:
         logger.error(f"TWILIO SMS OR USER CREATION FAILED for {username}: {e}")
-        # Log a critical failure but do NOT create the user if the initial
-        # communication (SMS) failed, as the member would be locked out.
-        # If the member object was saved but the user wasn't, an admin would need to intervene.
+        print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         print(f"User account for '{username}' was NOT created due to failure.")
+        print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
