@@ -1,9 +1,10 @@
 # signals.py
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Member
-from django.core.mail import send_mail
+from twilio.rest import Client
 import string
 import random
 import logging
@@ -11,87 +12,82 @@ import logging
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-def generate_random_password(length=12): # Increased length for better security
+def generate_random_password(length=12): # Use a secure length
     """Generates a random, secure password."""
+    # Using letters, digits, and punctuation for high security
     characters = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choice(characters) for i in range(length))
 
 @receiver(post_save, sender=Member)
 def create_user_for_member(sender, instance, created, **kwargs):
     """
-    Signal to create a User and link it to a new Member,
-    and email the password if an email is available.
+    Signal to create a User, link it to a new Member, and SMS the password
+    using Twilio.
     """
     if not created:
         return # Only run when a Member object is first created
 
-    # 1. Determine Username and Check for Existing User
-    username = instance.phone_number
-    if User.objects.filter(username=username).exists():
-        # User with this unique identifier already exists, prevent creation.
-        logger.warning(f"User creation skipped: Username '{username}' already exists.")
+    # Prevents infinite loop if the Member object's 'user' field is saved *after* creation
+    if instance.user:
         return
 
-    # 2. Handle Password Generation and Emailing
+    # 1. Determine Username and Check for Existing User
+    # Assumes phone_number is the unique identifier for the User model
+    username = instance.phone_number 
+    if User.objects.filter(username=username).exists():
+        logger.warning(f"User creation skipped: User with phone number '{username}' already exists.")
+        return
+
+    # 2. Handle Password Generation and SMS Sending
     password = generate_random_password()
-    email_sent_successfully = False
-
-    if instance.email:
-        try:
-            subject = 'እንኳን ወደ ፓርቲያችን በደህና መጡ! (Welcome to Our Party!)'
-            message = f"""
-ሰላም {instance.full_name},
-
-የፓርቲያችን አባል ለመሆን ስለተመዘገቡ እናመሰግናለን።
-የተጠቃሚ አካውንትዎ በተሳካ ሁኔታ ተፈጥሯል።
-
-ወደ ስርዓቱ ለመግባት ይህንን መረጃ ይጠቀሙ:
-የተጠቃሚ ስም (Username): {username}
-የይለፍ ቃል (Password): {password}
-
-ሎግኢን ካደረጉ በኋላ ወዲያውኑ የይለፍ ቃልዎን እንዲቀይሩ እንመክራለን።
-
-ከሰላምታ ጋር,
-የፓርቲው አስተዳደር
-"""
-            # Using the email keyword argument ensures it's sent as a single email.
-            send_mail(
-                subject, 
-                message, 
-                None, # Uses DEFAULT_FROM_EMAIL from settings
-                [instance.email],
-                fail_silently=False # Log the error if it fails
-            )
-            email_sent_successfully = True
-            logger.info(f"Welcome email successfully sent to {instance.email}")
-
-        except Exception as e:
-            # If email fails, log it and fall back to the generic password
-            password = "password123" # Fallback password
-            logger.error(f"EMAIL SENDING FAILED for {instance.email}: {e}. Using default password.")
-    else:
-        # No email provided, use the generic fallback password
-        password = "password123" 
-        logger.warning(f"No email provided for {instance.full_name}. Using default password 'password123'.")
-
-    # 3. Create the User
-    user = User.objects.create_user(
-        username=username,
-        email=instance.email if instance.email else '',
-        password=password
-    )
-
-    # 4. Link the User to the Member profile and SAVE (CRITICAL FIX)
     
-    # CRITICAL FIX: Temporarily disconnect the signal to prevent infinite recursion
-    post_save.disconnect(create_user_for_member, sender=Member)
-    
-    instance.user = user
-    # Note: If your Member model has a user field, this save triggers the signal 
-    # and would cause an infinite loop without the disconnect/reconnect.
-    instance.save() 
-    
-    # Reconnect the signal immediately
-    post_save.connect(create_user_for_member, sender=Member)
-    
-    logger.info(f"Created and linked user '{username}' for member '{instance.full_name}'.")
+    # --- Twilio SMS Integration ---
+    try:
+        if not all([settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN, settings.TWILIO_PHONE_NUMBER]):
+            raise EnvironmentError("Twilio credentials are not fully set in settings.")
+
+        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+        
+        # IMPORTANT: Ensure the phone_number is in E.164 format (e.g., +251911123456)
+        to_phone_number = instance.phone_number
+        
+        message_body = f"""እንኳን ደህና መጡ!
+የመግቢያ መረጃዎ:
+የተጠቃሚ ስም: {username}
+የይለፍ ቃል: {password}
+በመጀመሪያው ሎግኢን የይለፍ ቃልዎን ይቀይሩ።"""
+        
+        message = client.messages.create(
+            body=message_body,
+            from_=settings.TWILIO_PHONE_NUMBER,
+            to=to_phone_number
+        )
+        
+        logger.info(f"SMS successfully sent to {to_phone_number} with SID: {message.sid}")
+        
+        # 3. Create the User (ONLY if SMS was successfully initiated)
+        user = User.objects.create_user(
+            username=username,
+            email=instance.email if instance.email else '',
+            password=password
+        )
+
+        # 4. Link the User to the Member profile and SAVE (CRITICAL FIX IMPLEMENTATION)
+        # CRITICAL FIX: To prevent an infinite recursion loop when instance.save() is called,
+        # we temporarily disconnect and reconnect the signal.
+        post_save.disconnect(create_user_for_member, sender=Member)
+        
+        instance.user = user
+        instance.save()
+        
+        # Reconnect the signal immediately
+        post_save.connect(create_user_for_member, sender=Member)
+        
+        logger.info(f"Created and linked user '{username}' for member '{instance.full_name}'.")
+        
+    except Exception as e:
+        logger.error(f"TWILIO SMS OR USER CREATION FAILED for {username}: {e}")
+        # Log a critical failure but do NOT create the user if the initial
+        # communication (SMS) failed, as the member would be locked out.
+        # If the member object was saved but the user wasn't, an admin would need to intervene.
+        print(f"User account for '{username}' was NOT created due to failure.")
