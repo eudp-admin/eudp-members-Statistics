@@ -61,22 +61,23 @@ def register_member(request):
     if request.method == 'POST':
         form = MemberCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            # Check if a user is logged in to associate the record creator
-            if request.user.is_authenticated:
-                member = form.save(commit=False)
-                # Note: The Member model doesn't have a 'created_by' field,
-                # but it might be useful to set a default user if required.
-                member.save()
-            else:
-                 form.save()
-            messages.success(request, 'ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! እናመሰግናለን።')
-            return redirect('member_list')
+           # Don't save the member yet, we need to get data from it
+            new_member = form.save(commit=False)
+            new_member.save() # Now save it to the database
+
+            # The signal will run here and create a user.
+            # Now, we store the credentials in the session to show on the next page.
+            request.session['new_username'] = new_member.phone_number
+            request.session['new_password'] = "password123" # The default password
+
+            # Redirect to our new success page
+            return redirect('registration_success')
     else:
         form = MemberCreationForm()
         
     context = {
         'form': form,
-        'page_title': 'አዲስ አባል መመዝገቢያ',
+        'page_title': 'አዲስ አባል መመዝገቢያ'
     }
     return render(request, 'members/register_form.html', context)
 
@@ -263,3 +264,19 @@ def landing_page(request):
         return redirect('login_redirect')
     
     return render(request, 'members/landing_page.html')
+    def registration_success(request):
+    # We will get the username and password from the session
+    new_username = request.session.get('new_username', 'የለም')
+    new_password = request.session.get('new_password', 'የለም')
+    
+    # Clear the session variables after displaying them
+    if 'new_username' in request.session:
+        del request.session['new_username']
+    if 'new_password' in request.session:
+        del request.session['new_password']
+
+    context = {
+        'new_username': new_username,
+        'new_password': new_password
+    }
+    return render(request, 'members/registration_success.html', context)
