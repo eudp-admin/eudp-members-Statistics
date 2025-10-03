@@ -5,36 +5,32 @@
 
 {% block content %}
 <style>
-    /* ከቤዝ ቴምፕሌት ላይ ያሉትን ቀለሞች መጠቀም */
     :root {
-        --party-dark-bg: #2c3e50; /* ለርዕስ እና ራስጌ */
-        --party-primary-color: #1e8449; /* አረንጓዴ */
-        --party-secondary-color: #176638;
-        --card-width: 350px; /* ለህትመት እንዲመች የተስተካከለ ስፋት */
+        --party-dark-bg: #2c3e50;
+        --party-primary-color: #1e8449;
+        --card-width: 350px;
     }
 
-    /* የካርድ ኮንቴይነር ዘይቤ */
     .id-card-container {
         width: var(--card-width);
         border: 2px solid var(--party-dark-bg);
         border-radius: 12px;
         box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-        margin: 40px auto; /* ገጹ ላይ መሃል ላይ እንዲሆን */
-        font-family: Arial, sans-serif;
+        margin: 40px auto;
+        font-family: 'Abyssinica SIL', serif; /* Abyssinica SIL ፎንት ተጨምሯል */
     }
 
-    /* የካርድ ራስጌ */
     .id-card-header {
         background-color: var(--party-dark-bg);
         color: white;
-        padding: 15px 0;
+        padding: 10px 0;
         border-top-left-radius: 10px;
         border-top-right-radius: 10px;
     }
     .id-card-header h4 {
         font-weight: 700;
         margin-bottom: 0;
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
     .id-card-header small {
         font-weight: 300;
@@ -43,143 +39,127 @@
     }
     .header-logo {
         height: 35px;
-        filter: invert(1); /* ሎጎ ነጭ እንዲሆን */
+        /* filter: brightness(0) invert(1); -- This makes it pure white */
     }
 
-    /* የፎቶ ዘይቤ */
     .profile-photo-id {
         width: 100px;
         height: 100px;
         object-fit: cover;
-        border: 3px solid var(--party-primary-color); /* አረንጓዴ ቀለበት */
+        border: 3px solid var(--party-primary-color);
         border-radius: 50%;
-        margin-top: 5px;
+        padding: 2px;
+        background-color: white;
     }
     .photo-placeholder {
         height: 100px;
         width: 100px;
-        line-height: 100px;
         background-color: #f0f0f0;
         border: 1px solid #ccc;
         border-radius: 50%;
-        display: flex; /* አዶውን መሃል ለማድረግ */
+        display: flex;
         align-items: center;
         justify-content: center;
         color: #777;
     }
 
-    /* የመረጃ ዝርዝር */
     .id-info-list strong {
         font-weight: 600;
-        color: var(--party-dark-bg);
+        color: #555;
         display: block;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        line-height: 1;
     }
     .id-info-list span {
-        font-weight: 400;
-        color: #333;
-        font-size: 0.95rem;
+        font-weight: 500;
+        color: #000;
+        font-size: 0.9rem;
     }
     .membership-id {
-        font-size: 1.1rem !important;
+        font-size: 1rem !important;
         font-weight: 700 !important;
-        color: var(--party-primary-color) !important; /* መለያ ቁጥር ጎላ እንዲል */
+        color: var(--party-primary-color) !important;
     }
 
-    /* የካርድ የታችኛው ክፍል */
     .id-card-footer {
-        padding: 10px 20px 20px;
-        background-color: #f8f8f8;
+        padding: 10px 15px;
         border-bottom-left-radius: 10px;
         border-bottom-right-radius: 10px;
-        border-top: 1px dashed #ddd;
-    }
-    .id-card-footer small {
-        font-size: 0.75rem;
-        color: #555;
+        border-top: 1px solid #eee;
     }
 
-    /* ለህትመት ማስተካከያ */
+    /* Print specific styles can go into a separate file if needed */
     @media print {
-        body {
-            background-color: white !important;
-            margin: 0;
-            padding: 0;
+        body * {
+            visibility: hidden;
         }
-        .container, .id-card-container {
-            width: 85.6mm; /* መደበኛ ID ካርድ ስፋት */
-            height: 53.98mm; /* መደበኛ ID ካርድ ቁመት */
-            box-shadow: none !important;
-            border: 1px solid #000; /* ህትመት ላይ ግልጽ ጠርዝ እንዲኖረው */
-            margin: 0;
-            padding: 0;
+        .id-card-container, .id-card-container * {
+            visibility: visible;
+        }
+        .id-card-container {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            left: 0;
+            top: 0;
+            margin: 0;
+            box-shadow: none;
+            border: 1px solid black;
         }
         .btn-print {
-            display: none; /* የማተሚያ አዝራር በህትመት ላይ እንዳይታይ */
-        }
-        /* የBase ቴምፕሌት ራስጌ እና እግርጌ እንዳይታዩ ማረጋገጥ */
-        header, footer, nav, .site-header, .site-footer {
-            display: none !important;
+            display: none;
         }
     }
 </style>
 
-<div class="d-flex justify-content-center">
-    <div class="id-card-container">
-        <div class="id-card-header text-center">
-            <div class="d-flex align-items-center justify-content-center">
-                <img src="{% static 'images/logo.png' %}" alt="Logo" class="header-logo me-2">
-                <h4 class="mb-0">የኢትዮጵያ አንድነት እና ልማት ፓርቲ</h4>
-            </div>
-            <small>የአባልነት መታወቂያ ካርድ</small>
+<div class="id-card-container">
+    <div class="id-card-header text-center">
+        <div class="d-flex align-items-center justify-content-center">
+            <img src="{% static 'images/logo.png' %}" alt="Logo" class="header-logo me-2">
+            <h4 class="mb-0">[የፓርቲው ስም]</h4>
         </div>
-        
-        <div class="card-body p-3">
-            <div class="row g-2">
-                <div class="col-4 text-center d-flex flex-column align-items-center">
-                    {% if member.photo %}
-                        <img src="{{ member.photo.url }}" class="img-fluid profile-photo-id" alt="Profile Photo">
-                    {% else %}
-                        <div class="photo-placeholder">
-                            <i class="fas fa-user fa-2x"></i>
-                        </div>
-                    {% endif %}
-<img src="data:image/png;base64,{{ qr_image_base64 }}" alt="QR Code" style="width: 80px; height: 80px;">
-                <div class="col-8">
-                    <ul class="list-unstyled id-info-list">
-                        <li class="mb-1"><strong>ሙሉ ስም:</strong><span>{{ member.full_name }}</span></li>
-                        <li class="mb-1"><strong>መለያ ቁጥር:</strong><span class="membership-id">{{ member.membership_id }}</span></li>
-                        <li class="mb-1"><strong>ጾታ:</strong><span>{{ member.get_gender_display|default:"ያልተገለጸ" }}</span></li>
-                        <li class="mb-1"><strong>ክልል:</strong><span>{{ member.address_region }}</span></li>
-                        <li><strong>የተቀላቀለበት ቀን:</strong><span>{{ member.join_date|date:"Y-m-d" }}</span></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="id-card-footer">
-            <div class="row align-items-center">
-                <div class="col-7">
-                    <small>
-                        <i class="fas fa-lock me-1"></i> ይህ ካርድ የፓርቲው ንብረት ነው። ቢጠፋ ወይንም ተጥሎ ቢገኝ በአቅራቢያዎ ላለ ቢሮ ያስረክቡ።
-                    </small>
-                </div>
-                <div class="col-5 text-center">
-                    {% comment %} እውነተኛ ፊርማ ወይም ማህተም የሚያመለክት ቦታ {% endcomment %}
-                    <div style="border-top: 1px solid #333; margin-top: 5px; padding-top: 3px;">
-                        <small>የኃላፊ ፊርማ</small>
+        <small>የአባልነት መታወቂያ ካርድ</small>
+    </div>
+    
+    <div class="card-body p-3">
+        <div class="row g-3">
+            <!-- ======================= LEFT COLUMN (PHOTO & QR) ======================= -->
+            <div class="col-4 text-center d-flex flex-column justify-content-between align-items-center">
+                <!-- Profile Photo -->
+                {% if member.photo %}
+                    <img src="{{ member.photo.url }}" class="img-fluid profile-photo-id" alt="Profile Photo">
+                {% else %}
+                    <div class="photo-placeholder">
+                        <p class="m-0 small">ፎቶ<br>የለም</p>
                     </div>
+                {% endif %}
+                
+                <!-- QR Code -->
+                <div class="mt-2">
+                    <img src="data:image/png;base64,{{ qr_image_base64 }}" alt="QR Code" style="width: 70px; height: 70px;">
                 </div>
+            </div>
+
+            <!-- ======================= RIGHT COLUMN (INFO) ======================= -->
+            <div class="col-8">
+                <ul class="list-unstyled id-info-list">
+                    <li class="mb-2"><strong>ሙሉ ስም</strong><span>{{ member.full_name }}</span></li>
+                    <li class="mb-2"><strong>መለያ ቁጥር</strong><span class="membership-id">{{ member.membership_id }}</span></li>
+                    <li class="mb-2"><strong>ክልል</strong><span>{{ member.address_region }}</span></li>
+                    <li><strong>የተቀላቀለበት ቀን</strong><span>{{ member.join_date|date:"d-m-Y" }}</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="id-card-footer">
+        <div class="text-center">
+            <div style="border-top: 1px solid #333; margin: 10px 40px 5px; padding-top: 3px;">
+                <small>የኃላፊ ፊርማ</small>
             </div>
         </div>
     </div>
 </div>
 
-<div class="text-center mt-5">
+<div class="text-center my-4">
     <button onclick="window.print()" class="btn btn-primary btn-lg btn-print">
         <i class="fas fa-print me-2"></i> የመታወቂያ ካርዱን አትም
     </button>
