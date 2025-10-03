@@ -10,4 +10,5 @@ urlpatterns = [
     path('export/csv/', views.export_members_csv, name='export_members_csv'),
     path('login_redirect/', views.login_redirect_view, name='login_redirect'),
     path('announcements/', views.announcement_list, name='announcements'),
+    path('register/success/', views.registration_success, name='registration_success'),
 ]
