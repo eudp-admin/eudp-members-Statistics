@@ -182,10 +182,17 @@ LOGIN_REDIRECT_URL = 'login_redirect'
 # settings.py
 
 if 'RENDER' in os.environ:
-    # --- PRODUCTION EMAIL SETTINGS (BREVO) ---
-TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+    # --- PRODUCTION SETTINGS ---
+    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+    TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
+else:
+    # --- DEVELOPMENT SETTINGS ---
+    # We can leave this part empty for now, or print a message
+    print("In development mode, SMS will not be sent.")
+    TWILIO_ACCOUNT_SID = None
+    TWILIO_AUTH_TOKEN = None
+    TWILIO_PHONE_NUMBER = None
 
 # Crispy Forms Settings
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
