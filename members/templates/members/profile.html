@@ -35,7 +35,8 @@
         width: 150px;
         height: 150px;
         object-fit: cover;
-        border: 3px solid var(--party-dark-bg); /* ጥቁር/ሰማያዊ ቀለበት */
+        /* የቦርደር ቀለም ጥቁር/ሰማያዊ ነው */
+        border: 3px solid var(--party-dark-bg); 
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
@@ -62,10 +63,12 @@
         font-size: 0.9rem;
         padding: 0.5em 0.8em;
         border-radius: 50px;
+        white-space: nowrap; /* ጽሁፉ እንዳይሰበር */
     }
     
-    /* የአዝራር ዘይቤ */
-    .btn-edit {
+    /* አዝራር ዘይቤዎች */
+    /* 1. መረጃ አስተካክል (ዋናው ቀለም - አረንጓዴ) */
+    .btn-edit-main {
         background-color: var(--party-primary-color);
         border-color: var(--party-primary-color);
         color: white;
@@ -73,10 +76,28 @@
         border-radius: 50px;
         padding: 10px 25px;
         transition: all 0.3s;
+        margin-right: 15px; /* ከሁለተኛው አዝራር ጋር ክፍተት */
     }
-    .btn-edit:hover {
+    .btn-edit-main:hover {
         background-color: var(--party-secondary-color);
         border-color: var(--party-secondary-color);
+        transform: translateY(-2px);
+    }
+    
+    /* 2. መታወቂያ (ሁለተኛው ቀለም - ጨለማ) */
+    .btn-id-card {
+        background-color: var(--party-dark-bg);
+        border-color: var(--party-dark-bg);
+        color: white;
+        font-weight: 600;
+        border-radius: 50px;
+        padding: 10px 25px;
+        transition: all 0.3s;
+    }
+    .btn-id-card:hover {
+        background-color: #34495e;
+        border-color: #34495e;
+        transform: translateY(-2px);
     }
     
     /* የስብሰባ ዝርዝር */
@@ -86,6 +107,7 @@
         border-radius: 4px;
         padding: 12px;
         background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 </style>
 
@@ -106,10 +128,11 @@
                         {% if member.photo %}
                             <img src="{{ member.photo.url }}" alt="{{ member.full_name }}" class="img-fluid rounded-circle mb-3 profile-photo">
                         {% else %}
-                            <div class="mb-3 d-inline-block p-4 bg-light rounded-circle border border-dark">
+                            <div class="mb-3 d-inline-block p-4 bg-light rounded-circle border border-dark profile-photo d-flex align-items-center justify-content-center">
                                 <i class="fas fa-user-alt fa-3x text-muted"></i>
                             </div>
                         {% endif %}
+                        
                         <h4 class="card-title" style="color: var(--party-dark-bg); font-weight: 600;">{{ member.full_name }}</h4>
                         <p class="text-muted"><i class="fas fa-medal me-1"></i> {{ member.party_role|default:"የፓርቲ አባል" }}</p>
                         
@@ -118,9 +141,15 @@
                         </span>
 
                         <hr class="mt-4">
-                        <a href="{% url 'profile_update' %}" class="btn btn-edit">
-                            <i class="fas fa-user-edit me-2"></i> መረጃ አስተካክል
-                        </a>
+                        
+                        <div class="d-flex flex-column align-items-center">
+                            <a href="{% url 'profile_update' %}" class="btn btn-edit-main mb-2 w-100">
+                                <i class="fas fa-user-edit me-2"></i> መረጃ አስተካክል
+                            </a>
+                            <a href="{% url 'member_id_card' member.pk %}" class="btn btn-id-card w-100" target="_blank">
+                                <i class="fas fa-id-card me-2"></i> የዲጂታል መታወቂያ እይ
+                            </a>
+                        </div>
                     </div>
 
                     <div class="col-md-8">
@@ -181,7 +210,7 @@
                         </span>
                     </li>
                     {% empty %}
-                    <li class="list-group-item text-center text-muted py-4">
+                    <li class="list-group-item text-center text-muted py-4" style="background-color: var(--party-background);">
                         <i class="fas fa-times-circle me-2"></i> ምንም አይነት የተሳትፎ ታሪክ አልተገኘም።
                     </li>
                     {% endfor %}
