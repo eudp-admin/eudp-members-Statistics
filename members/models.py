@@ -43,18 +43,12 @@ class Member(models.Model):
         return self.full_name
 
     def save(self, *args, **kwargs):
-        # Check if this is a new object being created
-        is_new = self._state.adding
-
-        # Always call the original save method first to get a primary key (pk)
-        super().save(*args, **kwargs)
-
-        if is_new:
-            # --- 1. Generate Membership ID ---
+        # Check if this is a new object being created (has no pk yet)
+        if not self.pk:
+            # --- 1. Generate Membership ID FIRST ---
             current_year = datetime.now().year
             region = self.address_region.upper()
-            region_code = {
-                'አማራ': 'AMH',
+            region_code = {'አማራ': 'AMH',
                 'ኦሮሚያ': 'ORO',
                 'ትግራይ': 'TIG',
                 'አዲስ አበባ': 'AA',
@@ -69,29 +63,31 @@ class Member(models.Model):
                 'ሲዳማ': 'SID',
                 'SOMALI': 'SOM', # Add common English names if they might be used
                 'AMHARA': 'AMH',
-                'OROMIA': 'ORO',
-                # Add other regions as needed...
-            }.get(region_name, 'OTH') # 'OTH' for other/unlisted regions
-
-            # 3. Find the last member registered in the same year to get the next number
-            # We simplify the filter here, checking only the year and region is redundant if the ID ensures uniqueness.
-            # However, to ensure sequential numbering PER region/year, we keep the original intent:
-            last_member_in_region_year = Member.objects.filter(
+                'OROMIA': 'ORO',}.get(region, 'OTH')
+            
+            # Find the highest existing number for this region and year
+            last_member = Member.objects.filter(
                 address_region=self.address_region, 
                 join_date__year=current_year
-            ).exclude(pk=self.pk).order_by('-pk').first()
+            ).order_by('pk').last()
             
             new_seq_num = 1
-            if last_member_in_region_year and last_member_in_region_year.membership_id:
+            if last_member and last_member.membership_id:
                 try:
-                    last_seq_num = int(last_member_in_region_year.membership_id.split('-')[-1])
+                    last_seq_num = int(last_member.membership_id.split('-')[-1])
                     new_seq_num = last_seq_num + 1
                 except (ValueError, IndexError):
                     pass
             
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
-            
-            # --- 2. Create and Link User ---
+
+        # --- 2. Call the original save method NOW ---
+        # Now that the membership_id is set, we can save.
+        super().save(*args, **kwargs)
+
+        # --- 3. Create and Link User AFTER the member is saved ---
+        # We check if the user is already linked. This part only runs if it's not.
+        if not self.user:
             username = self.phone_number
             if not User.objects.filter(username=username).exists():
                 print(f"Attempting to create user '{username}' for new member.")
@@ -103,19 +99,15 @@ class Member(models.Model):
                         email=self.email if self.email else ""
                     )
                     self.user = user
-                    print(f"Successfully created user '{username}'.")
+                    # Save again just to update the user link
+                    super().save(update_fields=['user'])
+                    print(f"Successfully created and linked user '{username}'.")
                 except Exception as e:
                     print(f"CRITICAL ERROR during user creation in model: {e}")
             else:
-                 print(f"User '{username}' already exists. Linking if possible.")
+                 print(f"User '{username}' already exists. Linking.")
                  self.user = User.objects.get(username=username)
-
-
-            # --- 3. Save Again ---
-            # Call save again to store the new membership_id and user link
-            # but use update_fields to avoid re-triggering this logic
-            super().save(update_fields=['membership_id', 'user'])
-
+                 super().save(update_fields=['user'])
 # =========================================================================
 # 2. MEETING MODEL
 #    (Moved outside of Member model and save method)
