@@ -143,7 +143,13 @@ def member_list(request):
         base_queryset = base_queryset.filter(join_date__lte=end_date)
     context = {'members': base_queryset, 'page_title': 'የፓርቲው አባላት ዝርዝር'}
     return render(request, 'members/member_list.html', context)
-
+@login_required
+def member_id_card(request, pk):
+    member = get_object_or_404(Member, pk=pk)
+    context = {
+        'member': member
+    }
+    return render(request, 'members/id_card_template.html', context)    
 @login_required
 def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
@@ -181,3 +187,4 @@ def export_members_csv(request):
     for member in queryset:
         writer.writerow([member.full_name, member.membership_id, member.phone_number, member.get_gender_display(), member.address_region, member.join_date])
     return response
+    
