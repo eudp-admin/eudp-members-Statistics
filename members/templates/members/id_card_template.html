@@ -1,5 +1,4 @@
 {% extends 'members/base.html' %}
-{% load qr_tags %}
 {% load static %}
 
 {% block title %}{{ member.full_name }} - የመታወቂያ ካርድ{% endblock %}
@@ -149,13 +148,7 @@
                             <i class="fas fa-user fa-2x"></i>
                         </div>
                     {% endif %}
-                    
-                    <div class="mt-2" style="width: 80px; height: 80px;">
-                        {% comment %} የ QR ኮድ ማምረት: የአባልነት መለያ ቁጥሩን (membership_id) ወይም ሌላ የህትመት ዩአርኤልን ሊይዝ ይችላል {% endcomment %}
-                        {% qr_from_text member.membership_id size="S" %}
-                    </div>
-                </div>
-
+<img src="data:image/png;base64,{{ qr_image_base64 }}" alt="QR Code" style="width: 80px; height: 80px;">
                 <div class="col-8">
                     <ul class="list-unstyled id-info-list">
                         <li class="mb-1"><strong>ሙሉ ስም:</strong><span>{{ member.full_name }}</span></li>
