@@ -4,39 +4,53 @@ from django.dispatch import receiver
 from .models import Member
 
 @receiver(post_save, sender=Member)
-def create_user_for_member(sender, instance, created, **kwargs):
+def create_or_update_user_for_member(sender, instance, created, **kwargs):
     """
-    Creates a User with a default password whenever a new Member is created.
-    This is a temporary solution until the Ethio Telecom SMS API is integrated.
+    Creates or updates a User when a Member is created.
+    This is a more robust version to handle potential issues.
     """
+    username = instance.phone_number
+
     if created:
-        # Check if a user is already linked to this member instance.
-        # This prevents the signal from running multiple times.
-        if hasattr(instance, 'user') and instance.user is not None:
+        # This is a NEW member.
+        if User.objects.filter(username=username).exists():
+            print(f"ERROR: A user with username '{username}' already exists. Cannot create a new one.")
             return
 
-        username = instance.phone_number
+        print(f"Attempting to create a new user for member: {instance.full_name} with username: {username}")
         
-        # Check if a user with this username (phone number) already exists.
-        if User.objects.filter(username=username).exists():
-            # If it exists, we can try to link it, but for now, we'll just stop
-            # to avoid creating a duplicate.
-            print(f"User with username '{username}' already exists. Skipping user creation.")
-            return
-        
-        # Use a default, predictable password.
-        # This will be replaced with a password sent via SMS in the future.
         password = "password123"
         
-        # Create the new user
-        user = User.objects.create_user(
-            username=username,
-            password=password,
-            email=instance.email if instance.email else "" # Also save the email if provided
-        )
-        
-        # Link the new user to the member profile and save the member instance again
-        instance.user = user
-        instance.save()
-        
-        print(f"Created user '{username}' with a default password. SMS integration is pending.")
+        try:
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=instance.email if instance.email else ""
+            )
+            
+            # Link the new user to the member profile IMMEDIATELY
+            instance.user = user
+            # We need to save the instance again, but prevent an infinite loop
+            # by disconnecting the signal temporarily.
+            post_save.disconnect(create_or_update_user_for_member, sender=Member)
+            instance.save()
+            post_save.connect(create_or_update_user_for_member, sender=Member)
+
+            print(f"SUCCESS: Created and linked user '{username}' for member '{instance.full_name}'")
+
+        except Exception as e:
+            print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            print(f"CRITICAL ERROR during user creation for {username}: {e}")
+            print(f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    
+    # This part handles updates, though not strictly necessary for creation, it's good practice.
+    else:
+        # This is an EXISTING member being updated.
+        # Ensure the user object is linked if it exists.
+        if not instance.user and User.objects.filter(username=username).exists():
+            user_to_link = User.objects.get(username=username)
+            instance.user = user_to_link
+            post_save.disconnect(create_or_update_user_for_member, sender=Member)
+            instance.save()
+            post_save.connect(create_or_update_user_for_member, sender=Member)
+            print(f"Linked existing user '{username}' to updated member '{instance.full_name}'")
