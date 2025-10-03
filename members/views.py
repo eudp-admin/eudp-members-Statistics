@@ -31,15 +31,52 @@ def register_member(request):
     if request.method == 'POST':
         form = MemberCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            new_member = form.save()
-            request.session['new_username'] = new_member.phone_number
-            request.session['new_password'] = "password123"
-            return redirect('registration_success')
-    else:
-        form = MemberCreationForm()
-    context = {'form': form, 'page_title': 'አዲስ አባል መመዝገቢያ'}
-    return render(request, 'members/register_form.html', context)
+            # 1. Member'ኡን ፍጠር ነገር ግን ዳታቤዝ ላይ አታስቀምጠው
+            new_member = form.save(commit=False)
+            
+            username = new_member.phone_number
+            password = "password123"
 
+            # 2. የተጠቃሚ ስሙ (ስልክ ቁጥሩ) ከዚህ በፊት መኖሩን አረጋግጥ
+            if User.objects.filter(username=username).exists():
+                messages.error(request, f"በዚህ ስልክ ቁጥር ({username}) የተመዘገበ ተጠቃሚ ከዚህ በፊት አለ።")
+                return render(request, 'members/register_form.html', {'form': form})
+
+            try:
+                # 3. አዲሱን User አካውንት ፍጠር
+                user = User.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=new_member.email if new_member.email else ""
+                )
+                
+                # 4. አዲሱን User ከ Member'ኡ ጋር አገናኘው
+                new_member.user = user
+                
+                # 5. አሁን Member'ኡን ከነግንኙነቱ ዳታቤዝ ላይ አስቀምጠው
+                new_member.save()
+
+                print(f"SUCCESS: Directly created and linked user '{username}' in the view.")
+
+                # 6. የመግቢያ መረጃውን ለስኬት ገጹ አሳልፍ
+                request.session['new_username'] = username
+                request.session['new_password'] = password
+                
+                return redirect('registration_success')
+
+            except Exception as e:
+                # የሆነ ችግር ከተፈጠረ፣ ለተጠቃሚው አሳውቅ
+                print(f"CRITICAL ERROR during user creation in view: {e}")
+                messages.error(request, "ምዝገባው ላይ ያልተጠበቀ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።")
+
+    else: # request.method is GET
+        form = MemberCreationForm()
+        
+    context = {
+        'form': form,
+        'page_title': 'አዲስ አባል መመዝገቢያ'
+    }
+    return render(request, 'members/register_form.html', context)
 def registration_success(request):
     new_username = request.session.get('new_username', 'የለም')
     new_password = request.session.get('new_password', 'የለም')
