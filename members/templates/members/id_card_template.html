@@ -1,5 +1,5 @@
 {% extends 'members/base.html' %}
-{% load qr_tags %}
+{% load qr_code %}
 {% load static %}
 
 {% block title %}{{ member.full_name }} - የመታወቂያ ካርድ{% endblock %}
@@ -63,6 +63,10 @@
         background-color: #f0f0f0;
         border: 1px solid #ccc;
         border-radius: 50%;
+        display: flex; /* አዶውን መሃል ለማድረግ */
+        align-items: center;
+        justify-content: center;
+        color: #777;
     }
 
     /* የመረጃ ዝርዝር */
@@ -141,14 +145,14 @@
                     {% if member.photo %}
                         <img src="{{ member.photo.url }}" class="img-fluid profile-photo-id" alt="Profile Photo">
                     {% else %}
-                        <div class="photo-placeholder d-flex align-items-center justify-content-center text-muted">
+                        <div class="photo-placeholder">
                             <i class="fas fa-user fa-2x"></i>
                         </div>
                     {% endif %}
                     
-                    <div class="mt-2" style="max-width: 80px;">
-                        {% comment %} የ QR ኮድ ማምረት (መጠን በጣም ትንሽ መሆን አለበት) {% endcomment %}
-                        {% qr_from_text request.build_absolute_uri member.membership_id size="S" %}
+                    <div class="mt-2" style="width: 80px; height: 80px;">
+                        {% comment %} የ QR ኮድ ማምረት: የአባልነት መለያ ቁጥሩን (membership_id) ወይም ሌላ የህትመት ዩአርኤልን ሊይዝ ይችላል {% endcomment %}
+                        {% qr_from_text member.membership_id size="S" %}
                     </div>
                 </div>
 
@@ -172,7 +176,7 @@
                     </small>
                 </div>
                 <div class="col-5 text-center">
-                    {% comment %} እውነተኛ ፊርማ (አስፈላጊ ከሆነ ምስል መጨመር) {% endcomment %}
+                    {% comment %} እውነተኛ ፊርማ ወይም ማህተም የሚያመለክት ቦታ {% endcomment %}
                     <div style="border-top: 1px solid #333; margin-top: 5px; padding-top: 3px;">
                         <small>የኃላፊ ፊርማ</small>
                     </div>
