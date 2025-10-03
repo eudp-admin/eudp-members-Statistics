@@ -35,8 +35,19 @@
         width: 150px;
         height: 150px;
         object-fit: cover;
-        border: 4px solid var(--party-background); /* ነጭ ቀለበት */
+        /* የቦርደር ቀለም ጥቁር/ሰማያዊ ነው */
+        border: 4px solid var(--party-dark-bg); 
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .photo-placeholder {
+        /* የፎቶ ቦታ ከሌለ */
+        width: 150px;
+        height: 150px;
+        line-height: 150px;
+        background-color: #f0f0f0;
+        border: 4px solid var(--party-dark-bg);
+        border-radius: 50%;
+        margin: 0 auto 15px;
     }
 
     /* የመረጃ ዝርዝር ዘይቤ (Clean Definition List) */
@@ -62,16 +73,18 @@
         font-size: 0.9rem;
         padding: 0.5em 0.8em;
         border-radius: 50px;
+        white-space: nowrap;
     }
     
-    /* የአዝራሮች ዘይቤ */
+    /* የአዝራር ዘይቤዎች */
     .btn-custom {
         font-weight: 600;
         border-radius: 50px;
         padding: 10px 20px;
         transition: all 0.3s;
+        margin-left: 10px; /* በአዝራሮች መካከል ክፍተት */
     }
-    .btn-back {
+    .btn-back { /* ግራጫ */
         background-color: #6c757d;
         border-color: #6c757d;
         color: white;
@@ -80,14 +93,36 @@
         background-color: #5a6268;
         border-color: #5a6268;
     }
-    .btn-edit {
+    .btn-edit-main { /* አረንጓዴ - አርትዖት */
         background-color: var(--party-primary-color);
         border-color: var(--party-primary-color);
         color: white;
     }
-    .btn-edit:hover {
+    .btn-edit-main:hover {
         background-color: var(--party-secondary-color);
         border-color: var(--party-secondary-color);
+    }
+    .btn-id-card { /* ጨለማ - መታወቂያ */
+        background-color: var(--party-dark-bg);
+        border-color: var(--party-dark-bg);
+        color: white;
+    }
+    .btn-id-card:hover {
+        background-color: #34495e;
+        border-color: #34495e;
+    }
+
+    /* የስብሰባ ዝርዝር */
+    .list-group-item-meeting {
+        border-left: 3px solid var(--party-primary-color);
+        margin-bottom: 0;
+        border-radius: 0;
+        padding: 15px 20px;
+        background-color: #fff;
+    }
+    .list-group-item-meeting:last-child {
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
     }
 </style>
 
@@ -104,18 +139,18 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4 text-center border-end">
+                    <div class="col-md-4 text-center border-end mb-4 mb-md-0">
                         {% if member.photo %}
                             <img src="{{ member.photo.url }}" alt="{{ member.full_name }}" class="img-fluid rounded-circle mb-3 profile-photo">
                         {% else %}
-                            <div class="mb-3 d-inline-block p-4 bg-light rounded-circle border">
-                                <i class="fas fa-user-alt fa-3x text-muted"></i>
+                            <div class="photo-placeholder d-flex align-items-center justify-content-center text-muted">
+                                <i class="fas fa-user-alt fa-3x"></i>
                             </div>
                         {% endif %}
                         <h4 class="card-title" style="color: var(--party-dark-bg); font-weight: 600;">{{ member.full_name }}</h4>
                         <p class="text-muted"><i class="fas fa-certificate me-1"></i> {{ member.party_role|default:"አባል" }}</p>
                         
-                        <span class="badge badge-primary-custom mt-2">
+                        <span class="badge badge-primary-custom mt-2 mb-4">
                             መለያ ቁጥር: {{ member.membership_id }}
                         </span>
                     </div>
@@ -158,11 +193,22 @@
                     </div>
                 </div>
             </div>
+            
+            <div class="card-footer d-flex justify-content-end bg-white py-3">
+                <a href="{% url 'profile_update' member.pk %}" class="btn btn-edit-main btn-custom">
+                    <i class="fas fa-user-edit me-2"></i> መረጃ አስተካክል
+                </a>
+                <a href="{% url 'member_id_card' member.pk %}" class="btn btn-id-card btn-custom" target="_blank">
+                    <i class="fas fa-id-card me-2"></i> የዲጂታል መታወቂያ እይ
+                </a>
+            </div>
         </div>
         
-        <a href="{% url 'member_list' %}" class="btn btn-back btn-custom float-end">
-            <i class="fas fa-arrow-left me-2"></i> ወደ ዝርዝር ተመለስ
-        </a>
+        <div class="text-start mb-5">
+            <a href="{% url 'member_list' %}" class="btn btn-back btn-custom">
+                <i class="fas fa-arrow-left me-2"></i> ወደ አባላት ዝርዝር ተመለስ
+            </a>
+        </div>
     </div>
 
     <div class="col-lg-4">
@@ -173,7 +219,7 @@
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
                     {% for meeting in member.attended_meetings.all %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <li class="list-group-item list-group-item-meeting d-flex justify-content-between align-items-center">
                         <div>
                             <strong>{{ meeting.title }}</strong>
                             <br><span class="text-muted small"><i class="fas fa-map-marker-alt me-1"></i> {{ meeting.location }}</span>
@@ -183,7 +229,7 @@
                         </span>
                     </li>
                     {% empty %}
-                    <li class="list-group-item text-center text-muted py-4">
+                    <li class="list-group-item text-center text-muted py-4" style="background-color: var(--party-background);">
                         <i class="fas fa-times-circle me-2"></i> ምንም አይነት የተሳትፎ ታሪክ አልተገኘም።
                     </li>
                     {% endfor %}
