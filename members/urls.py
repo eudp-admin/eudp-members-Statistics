@@ -11,4 +11,5 @@ urlpatterns = [
     path('login_redirect/', views.login_redirect_view, name='login_redirect'),
     path('announcements/', views.announcement_list, name='announcements'),
     path('register/success/', views.registration_success, name='registration_success'),
+    path('<int:pk>/id-card/', views.member_id_card, name='member_id_card'),
 ]
