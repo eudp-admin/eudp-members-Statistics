@@ -183,17 +183,6 @@ LOGIN_REDIRECT_URL = 'login_redirect'
 
 if 'RENDER' in os.environ:
     # --- PRODUCTION EMAIL SETTINGS (BREVO) ---
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp-relay.brevo.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get('BREVO_LOGIN_EMAIL')
-    EMAIL_HOST_PASSWORD = os.environ.get('BREVO_SMTP_KEY')
-    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER # Brevo requires the from_email to be the login email
-else:
-    # --- DEVELOPMENT SETTINGS ---
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = 'development@example.com'
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
