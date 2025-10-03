@@ -43,13 +43,16 @@ class Member(models.Model):
         return self.full_name
 
     def save(self, *args, **kwargs):
-        # This logic runs only when creating a NEW member for the first time
-        if not self.pk:
-            # 1. Get the current year
+        # Check if this is a new object being created
+        is_new = self._state.adding
+
+        # Always call the original save method first to get a primary key (pk)
+        super().save(*args, **kwargs)
+
+        if is_new:
+            # --- 1. Generate Membership ID ---
             current_year = datetime.now().year
-            
-            # 2. Get a 3-letter code for the region (Ensure consistent key/value case)
-            region_name = self.address_region.strip().upper()
+            region = self.address_region.upper()
             region_code = {
                 'አማራ': 'AMH',
                 'ኦሮሚያ': 'ORO',
@@ -57,7 +60,7 @@ class Member(models.Model):
                 'አዲስ አበባ': 'AA',
                 'ድሬዳዋ': 'DD',
                 'ደቡብ ኢትዮጵያ': 'SOET',
-                'ደቡብ ምራብ ኢትዮጵያ': 'SWET',
+                'ደቡብ ምዕራብ ኢትዮጵያ': 'SWET',
                 'ሐረር': 'HAR',
                 'አፋር': 'AFR',
                 'ሶማሌ': 'SOM',
@@ -73,26 +76,45 @@ class Member(models.Model):
             # 3. Find the last member registered in the same year to get the next number
             # We simplify the filter here, checking only the year and region is redundant if the ID ensures uniqueness.
             # However, to ensure sequential numbering PER region/year, we keep the original intent:
-            last_member = Member.objects.filter(
+            last_member_in_region_year = Member.objects.filter(
                 address_region=self.address_region, 
-                join_date__year=current_year # join_date is auto_now_add=True, so this works
-            ).order_by('-pk').first()
+                join_date__year=current_year
+            ).exclude(pk=self.pk).order_by('-pk').first()
             
             new_seq_num = 1
-            if last_member and last_member.membership_id:
+            if last_member_in_region_year and last_member_in_region_year.membership_id:
                 try:
-                    # Extract the sequence number from the ID (e.g., AMH-2024-0001 -> 1)
-                    last_seq_num = int(last_member.membership_id.split('-')[-1])
+                    last_seq_num = int(last_member_in_region_year.membership_id.split('-')[-1])
                     new_seq_num = last_seq_num + 1
                 except (ValueError, IndexError):
-                    # Fallback if ID format is unexpected
                     pass
             
-            # 4. Format the final Membership ID (e.g., AMH-2024-0001)
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
+            
+            # --- 2. Create and Link User ---
+            username = self.phone_number
+            if not User.objects.filter(username=username).exists():
+                print(f"Attempting to create user '{username}' for new member.")
+                password = "password123"
+                try:
+                    user = User.objects.create_user(
+                        username=username,
+                        password=password,
+                        email=self.email if self.email else ""
+                    )
+                    self.user = user
+                    print(f"Successfully created user '{username}'.")
+                except Exception as e:
+                    print(f"CRITICAL ERROR during user creation in model: {e}")
+            else:
+                 print(f"User '{username}' already exists. Linking if possible.")
+                 self.user = User.objects.get(username=username)
 
-        # Call the original save method to save the instance
-        super().save(*args, **kwargs)
+
+            # --- 3. Save Again ---
+            # Call save again to store the new membership_id and user link
+            # but use update_fields to avoid re-triggering this logic
+            super().save(update_fields=['membership_id', 'user'])
 
 # =========================================================================
 # 2. MEETING MODEL
