@@ -149,26 +149,31 @@
         }
 
         /* Print styles */
-        @media print {
-            body > * {
-                display: none !important;
-            }
-            .id-card-wrapper, .id-card {
-                display: block !important;
-                visibility: visible;
-            }
-            .id-card {
-                box-shadow: none;
-                border: 1px solid #ccc;
-                margin: 0;
-                position: absolute;
-                top: 0;
-                left: 0;
-            }
-            .btn-print {
-                display: none !important;
-            }
-        }
+@media print {
+  /* Remove the problematic rules that hide everything */
+  body * {
+    visibility: hidden;
+  }
+  
+  .id-card-wrapper, .id-card-wrapper * {
+    visibility: visible;
+  }
+  
+  /* Keep your existing print styles */
+  .id-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    margin: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+  
+  .btn-print {
+    display: none !important;
+  }
+}
     </style>
 
     <!-- Main wrapper for the content of this page -->
