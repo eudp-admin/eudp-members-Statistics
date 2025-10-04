@@ -18,7 +18,27 @@ class Member(models.Model):
     # --- Contact Information ---
     phone_number = models.CharField(max_length=20, unique=True, verbose_name="ስልክ ቁጥር")
     email = models.EmailField(unique=True, null=True, blank=True, verbose_name="ኢሜይል")
-    address_region = models.CharField(max_length=100, verbose_name="ክልል")
+    # Define the choices OUTSIDE the field definition
+    REGION_CHOICES = [
+('ኦሮሚያ', 'ኦሮሚያ'),
+        ('ትግራይ', 'ትግራይ'),
+        ('ደቡብ ኢትዮጵያ', 'ደቡብ ኢትዮጵያ'),
+        ('ደቡብ ምዕራብ ኢትዮጵያ', 'ደቡብ ምዕራብ ኢትዮጵያ'),
+        ('ሶማሌ', 'ሶማሌ'),
+        ('ጋምቤላ', 'ጋምቤላ'),
+        ('ሐረር', 'ሐረር'),
+        ('ድሬዳዋ', 'ድሬዳዋ'),
+        ('ቤኒሻንጉል ጉሙዝ', 'ቤኒሻንጉል ጉሙዝ'),
+        ('ሲዳማ', 'ሲዳማ'),
+        ('አፋር', 'አፋር'),
+    ]
+    # Now, pass the variable using the 'choices' keyword
+    address_region = models.CharField(
+        max_length=100, 
+        verbose_name="ክልል", 
+        choices=REGION_CHOICES  # <-- THE FIX IS HERE
+    )#
+    address_city = models.CharField(max_length=100, verbose_name="ከተማ") 
     address_zone = models.CharField(max_length=100, verbose_name="ዞን")
     address_woreda = models.CharField(max_length=100, verbose_name="ወረዳ")
     address_kebele = models.CharField(max_length=100, verbose_name="ቀበሌ")
@@ -30,7 +50,24 @@ class Member(models.Model):
     join_date = models.DateField(auto_now_add=True, verbose_name="የተቀላቀለበት ቀን")
     
     # --- Other Information ---
-    education_level = models.CharField(max_length=100, blank=True, null=True, verbose_name="የትምህርት ደረጃ")
+# Define the choices OUTSIDE the field definition
+    EDUCATION_CHOICES = [
+        ('መሰረታዊ ትምህርት', 'መሰረታዊ ትምህርት'),
+        ('ሁለተኛ ደረጃ', 'ሁለተኛ ደረጃ'),
+        ('ዲፕሎማ', 'ዲፕሎማ'),
+        ('ዲግሪ', 'ዲግሪ'),
+        ('ማስተርስ', 'ማስተርስ'),
+        ('ዶክትሬት (PhD)', 'ዶክትሬት (PhD)'),
+        ('ሌላ', 'ሌላ'),
+    ]
+    # Now, pass the variable using the 'choices' keyword
+    education_level = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name="የትምህርት ደረጃ",
+        choices=EDUCATION_CHOICES # <-- THE FIX IS HERE
+    )
     profession = models.CharField(max_length=100, blank=True, null=True, verbose_name="የስራ መስክ")
 
     # --- System Fields ---
@@ -43,12 +80,15 @@ class Member(models.Model):
         return self.full_name
 
     def save(self, *args, **kwargs):
-        # Check if this is a new object being created (has no pk yet)
+        # This logic runs only when creating a NEW member for the first time
         if not self.pk:
-            # --- 1. Generate Membership ID FIRST ---
+            # 1. Get the current year
             current_year = datetime.now().year
-            region = self.address_region.upper()
-            region_code = {'አማራ': 'AMH',
+            
+            # 2. Get a 3-letter code for the region (Ensure consistent key/value case)
+            region_name = self.address_region.strip().upper()
+            region_code = {
+                'አማራ': 'AMH',
                 'ኦሮሚያ': 'ORO',
                 'ትግራይ': 'TIG',
                 'አዲስ አበባ': 'AA',
@@ -63,51 +103,34 @@ class Member(models.Model):
                 'ሲዳማ': 'SID',
                 'SOMALI': 'SOM', # Add common English names if they might be used
                 'AMHARA': 'AMH',
-                'OROMIA': 'ORO',}.get(region, 'OTH')
-            
-            # Find the highest existing number for this region and year
+                'OROMIA': 'ORO',
+                # Add other regions as needed...
+            }.get(region_name, 'OTH') # 'OTH' for other/unlisted regions
+
+            # 3. Find the last member registered in the same year to get the next number
+            # We simplify the filter here, checking only the year and region is redundant if the ID ensures uniqueness.
+            # However, to ensure sequential numbering PER region/year, we keep the original intent:
             last_member = Member.objects.filter(
                 address_region=self.address_region, 
-                join_date__year=current_year
-            ).order_by('pk').last()
+                join_date__year=current_year # join_date is auto_now_add=True, so this works
+            ).order_by('-pk').first()
             
             new_seq_num = 1
             if last_member and last_member.membership_id:
                 try:
+                    # Extract the sequence number from the ID (e.g., AMH-2024-0001 -> 1)
                     last_seq_num = int(last_member.membership_id.split('-')[-1])
                     new_seq_num = last_seq_num + 1
                 except (ValueError, IndexError):
+                    # Fallback if ID format is unexpected
                     pass
             
+            # 4. Format the final Membership ID (e.g., AMH-2024-0001)
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
 
-        # --- 2. Call the original save method NOW ---
-        # Now that the membership_id is set, we can save.
+        # Call the original save method to save the instance
         super().save(*args, **kwargs)
 
-        # --- 3. Create and Link User AFTER the member is saved ---
-        # We check if the user is already linked. This part only runs if it's not.
-        if not self.user:
-            username = self.phone_number
-            if not User.objects.filter(username=username).exists():
-                print(f"Attempting to create user '{username}' for new member.")
-                password = "password123"
-                try:
-                    user = User.objects.create_user(
-                        username=username,
-                        password=password,
-                        email=self.email if self.email else ""
-                    )
-                    self.user = user
-                    # Save again just to update the user link
-                    super().save(update_fields=['user'])
-                    print(f"Successfully created and linked user '{username}'.")
-                except Exception as e:
-                    print(f"CRITICAL ERROR during user creation in model: {e}")
-            else:
-                 print(f"User '{username}' already exists. Linking.")
-                 self.user = User.objects.get(username=username)
-                 super().save(update_fields=['user'])
 # =========================================================================
 # 2. MEETING MODEL
 #    (Moved outside of Member model and save method)
