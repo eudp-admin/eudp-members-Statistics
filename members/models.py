@@ -38,7 +38,6 @@ class Member(models.Model):
         verbose_name="ክልል", 
         choices=REGION_CHOICES  # <-- THE FIX IS HERE
     )#
-    address_city = models.CharField(max_length=100, verbose_name="ከተማ") 
     address_zone = models.CharField(max_length=100, verbose_name="ዞን")
     address_woreda = models.CharField(max_length=100, verbose_name="ወረዳ")
     address_kebele = models.CharField(max_length=100, verbose_name="ቀበሌ")
