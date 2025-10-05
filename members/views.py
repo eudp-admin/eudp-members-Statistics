@@ -1,21 +1,22 @@
 # ===================================================================
-#               Corrected and Cleaned members/views.py
+#               Corrected and Final members/views.py
 # ===================================================================
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.models import User # Make sure this is imported at the top
+from django.contrib.auth.models import User # Crucial import
 from django.db.models import Count, Q
 from django.db.models.functions import ExtractYear
 from django.http import HttpResponse
+from django.urls import reverse 
 import json
 import csv
 from datetime import datetime
 import qrcode
 import io
 import base64
-from django.urls import reverse 
+
 # Import models and forms
 from .models import Member, Announcement
 from .forms import MemberCreationForm, MemberUpdateForm
@@ -30,24 +31,55 @@ def landing_page(request):
     if request.user.is_authenticated:
         return redirect('login_redirect')
     return render(request, 'members/landing_page.html')
+
+# =================== THIS IS THE CORRECTED FUNCTION ===================
 def register_member(request):
     if request.method == 'POST':
         form = MemberCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            # Simply save the form. The model's save() method will handle EVERYTHING
-            # (creating the membership_id, creating the user, linking the user).
-            new_member = form.save()
+            # 1. Don't save to DB yet, just create a Member instance in memory
+            new_member = form.save(commit=False)
             
-            # Now that we are sure everything worked, pass the credentials to the session.
-            request.session['new_username'] = new_member.phone_number
-            request.session['new_password'] = "password123" 
-            
-            # Redirect to the success page.
-            return redirect('registration_success')
-        else:
-            # If the form is not valid, re-render the page with the form and its errors.
-             messages.error(request, "እባክዎ ፎርሙ ላይ ያሉትን ስህተቶች ያስተካክሉ።")
-    else:
+            username = new_member.phone_number
+            password = "password123"
+
+            # 2. Check if a User with this phone number already exists
+            if User.objects.filter(username=username).exists():
+                messages.error(request, f"በዚህ ስልክ ቁጥር ({username}) የተመዘገበ ተጠቃሚ ከዚህ በፊት አለ። እባክዎ ሌላ ስልክ ቁጥር ይጠቀሙ።")
+                return render(request, 'members/register_form.html', {'form': form, 'page_title': 'አዲስ አባል መመዝገቢያ'})
+
+            try:
+                # 3. Now, save the Member object. This will trigger the model's save() to create the membership_id.
+                new_member.save()
+
+                # 4. Explicitly create the User account here in the view
+                user = User.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=new_member.email if new_member.email else ""
+                )
+                
+                # 5. Link the new User to the Member profile and save again
+                new_member.user = user
+                new_member.save(update_fields=['user'])
+
+                print(f"SUCCESS: View explicitly created and linked user '{username}'.")
+
+                # 6. Pass the confirmed credentials to the success page
+                request.session['new_username'] = username
+                request.session['new_password'] = password
+                
+                return redirect('registration_success')
+
+            except Exception as e:
+                # If anything goes wrong, inform the user and log the error
+                print(f"CRITICAL ERROR during user creation in view: {e}")
+                # Optional: Delete the created member if user creation fails
+                if new_member.pk:
+                    new_member.delete()
+                messages.error(request, "ምዝገባው ላይ ያልተጠበቀ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።")
+
+    else: # if request.method is GET
         form = MemberCreationForm()
         
     context = {
@@ -55,6 +87,7 @@ def register_member(request):
         'page_title': 'አዲስ አባል መመዝገቢያ'
     }
     return render(request, 'members/register_form.html', context)
+# =====================================================================
     
 def registration_success(request):
     new_username = request.session.get('new_username', 'የለም')
@@ -73,6 +106,11 @@ def login_redirect_view(request):
         return redirect('dashboard')
     else:
         return redirect('profile')
+
+# ... The rest of your view functions remain the same ...
+# (profile, profile_update, announcement_list, dashboard, member_list, 
+# member_id_card, member_detail, export_members_csv)
+# I am including them below for completeness.
 
 @login_required
 def profile(request):
@@ -159,29 +197,21 @@ def member_list(request):
         base_queryset = base_queryset.filter(join_date__lte=end_date)
     context = {'members': base_queryset, 'page_title': 'የፓርቲው አባላት ዝርዝር'}
     return render(request, 'members/member_list.html', context)
+
 @login_required
 def member_id_card(request, pk):
     member = get_object_or_404(Member, pk=pk)
-
-    # --- አዲስ የ QR ኮድ አመንጪ አመክንዮ ---
-    # 1. QR ኮዱ የሚያመለክተውን ሙሉ URL መፍጠር
     qr_url = request.build_absolute_uri(reverse('member_detail', args=[member.pk]))
-
-    # 2. የ QR ኮዱን ምስል በ memory ውስጥ መፍጠር
     qr_image = qrcode.make(qr_url, box_size=4, border=1)
-    
-    # 3. ምስሉን ወደ memory buffer ማስቀመጥ
     buffer = io.BytesIO()
     qr_image.save(buffer, format='PNG')
-    
-    # 4. የምስሉን ዳታ ወደ Base64 string መቀየር
     qr_image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-
     context = {
         'member': member,
-        'qr_image_base64': qr_image_base64, # የምስሉን ዳታ ወደ ቴምፕሌቱ መላክ
+        'qr_image_base64': qr_image_base64,
     }
     return render(request, 'members/id_card_template.html', context)  
+
 @login_required
 def member_detail(request, pk):
     member = get_object_or_404(Member, pk=pk)
@@ -219,4 +249,3 @@ def export_members_csv(request):
     for member in queryset:
         writer.writerow([member.full_name, member.membership_id, member.phone_number, member.get_gender_display(), member.address_region, member.join_date])
     return response
-    
