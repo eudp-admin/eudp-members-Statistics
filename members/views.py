@@ -5,6 +5,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.models import User # Make sure this is imported at the top
 from django.db.models import Count, Q
 from django.db.models.functions import ExtractYear
 from django.http import HttpResponse
@@ -34,15 +35,47 @@ def register_member(request):
     if request.method == 'POST':
         form = MemberCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            # Just save the form. The model will handle everything else.
-            new_member = form.save() 
+            # 1. Don't save the form to the database yet
+            new_member = form.save(commit=False)
             
-            # Pass the credentials to the session
-            request.session['new_username'] = new_member.phone_number
-            request.session['new_password'] = "password123" 
-            
-            return redirect('registration_success')
-    else:
+            username = new_member.phone_number
+            password = "password123"
+
+            # 2. Check if a user with this username (phone number) already exists
+            if User.objects.filter(username=username).exists():
+                messages.error(request, f"በዚህ ስልክ ቁጥር ({username}) የተመዘገበ ተጠቃሚ ከዚህ በፊት አለ።")
+                # Return to the form and show the error
+                return render(request, 'members/register_form.html', {'form': form})
+
+            try:
+                # 3. Save the Member object first (this will trigger the model's save() method to create the membership_id)
+                new_member.save()
+
+                # 4. Now, create the User account
+                user = User.objects.create_user(
+                    username=username,
+                    password=password,
+                    email=new_member.email if new_member.email else ""
+                )
+                
+                # 5. Link the new User to the Member profile and save again
+                new_member.user = user
+                new_member.save(update_fields=['user'])
+
+                print(f"SUCCESS: Directly created and linked user '{username}' in the view.")
+
+                # 6. Pass the confirmed credentials to the success page
+                request.session['new_username'] = username
+                request.session['new_password'] = password
+                
+                return redirect('registration_success')
+
+            except Exception as e:
+                # If anything goes wrong, inform the user
+                print(f"CRITICAL ERROR during user creation in view: {e}")
+                messages.error(request, "ምዝገባው ላይ ያልተጠበቀ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።")
+
+    else: # if request.method is GET
         form = MemberCreationForm()
         
     context = {
