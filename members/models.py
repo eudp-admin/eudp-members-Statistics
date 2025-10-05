@@ -1,3 +1,7 @@
+# ===================================================================
+#               የተስተካከለው members/models.py
+# ===================================================================
+
 from django.db import models
 from django.contrib.auth.models import User
 from datetime import datetime
@@ -6,9 +10,6 @@ from datetime import datetime
 # 1. MEMBER MODEL
 # =========================================================================
 class Member(models.Model):
-    # There should only be ONE primary key definition, ideally at the top.
-    # id = models.AutoField(primary_key=True) # Django adds this by default, so we can remove it
-
     # --- Basic Information ---
     full_name = models.CharField(max_length=255, verbose_name="ሙሉ ስም")
     gender = models.CharField(max_length=10, choices=[('Male', 'ወንድ'), ('Female', 'ሴት')], verbose_name="ጾታ")
@@ -18,9 +19,11 @@ class Member(models.Model):
     # --- Contact Information ---
     phone_number = models.CharField(max_length=20, unique=True, verbose_name="ስልክ ቁጥር")
     email = models.EmailField(unique=True, null=True, blank=True, verbose_name="ኢሜይል")
-    # Define the choices OUTSIDE the field definition
+    
     REGION_CHOICES = [
-('ኦሮሚያ', 'ኦሮሚያ'),
+        ('አዲስ አበባ', 'አዲስ አበባ'),
+        ('አማራ', 'አማራ'),
+        ('ኦሮሚያ', 'ኦሮሚያ'),
         ('ትግራይ', 'ትግራይ'),
         ('ደቡብ ኢትዮጵያ', 'ደቡብ ኢትዮጵያ'),
         ('ደቡብ ምዕራብ ኢትዮጵያ', 'ደቡብ ምዕራብ ኢትዮጵያ'),
@@ -32,12 +35,7 @@ class Member(models.Model):
         ('ሲዳማ', 'ሲዳማ'),
         ('አፋር', 'አፋር'),
     ]
-    # Now, pass the variable using the 'choices' keyword
-    address_region = models.CharField(
-        max_length=100, 
-        verbose_name="ክልል", 
-        choices=REGION_CHOICES  # <-- THE FIX IS HERE
-    )#
+    address_region = models.CharField(max_length=100, verbose_name="ክልል", choices=REGION_CHOICES)
     address_zone = models.CharField(max_length=100, verbose_name="ዞን")
     address_woreda = models.CharField(max_length=100, verbose_name="ወረዳ")
     address_kebele = models.CharField(max_length=100, verbose_name="ቀበሌ")
@@ -47,9 +45,10 @@ class Member(models.Model):
     membership_level = models.CharField(max_length=50, choices=[('Full', 'ሙሉ አባል'), ('Supporter', 'ደጋፊ')], verbose_name="የአባልነት ደረጃ")
     party_role = models.CharField(max_length=100, blank=True, null=True, verbose_name="በፓርቲ ውስጥ ያለ ኃላፊነት")
     join_date = models.DateField(auto_now_add=True, verbose_name="የተቀላቀለበት ቀን")
+    is_coordinator = models.BooleanField(default=False, verbose_name="አስተባባሪ ነው?")
+    coordinator_region = models.CharField(max_length=100, blank=True, null=True, verbose_name="የሚያስተባብረው ክልል")
     
     # --- Other Information ---
-# Define the choices OUTSIDE the field definition
     EDUCATION_CHOICES = [
         ('መሰረታዊ ትምህርት', 'መሰረታዊ ትምህርት'),
         ('ሁለተኛ ደረጃ', 'ሁለተኛ ደረጃ'),
@@ -59,14 +58,7 @@ class Member(models.Model):
         ('ዶክትሬት (PhD)', 'ዶክትሬት (PhD)'),
         ('ሌላ', 'ሌላ'),
     ]
-    # Now, pass the variable using the 'choices' keyword
-    education_level = models.CharField(
-        max_length=100, 
-        blank=True, 
-        null=True, 
-        verbose_name="የትምህርት ደረጃ",
-        choices=EDUCATION_CHOICES # <-- THE FIX IS HERE
-    )
+    education_level = models.CharField(max_length=100, blank=True, null=True, verbose_name="የትምህርት ደረጃ", choices=EDUCATION_CHOICES)
     profession = models.CharField(max_length=100, blank=True, null=True, verbose_name="የስራ መስክ")
 
     # --- System Fields ---
@@ -78,27 +70,23 @@ class Member(models.Model):
     def __str__(self):
         return self.full_name
 
+    # =================== THIS IS THE CORRECTED SAVE METHOD ===================
     def save(self, *args, **kwargs):
-        # Check if this is a new object being created (has no pk yet)
-        if not self.pk:
-            # --- 1. Generate Membership ID FIRST ---
+        # This logic now ONLY handles the membership ID generation for new members
+        # The User creation is handled in the view.
+        if not self.pk: # Only run when creating a new member
             current_year = datetime.now().year
-            region = self.address_region.upper()
-            region_code = {'አማራ': 'AMH',
-                'ኦሮሚያ': 'ORO',
-                'ትግራይ': 'TIG',
-                'አዲስ አበባ': 'AA',
-                'ድሬዳዋ': 'DD',
-                'ደቡብ ኢትዮጵያ': 'SOET',
-                'ደቡብ ምዕራብ ኢትዮጵያ': 'SWET',
-                'ሐረር': 'HAR',
-                'አፋር': 'AFR',
-                'ሶማሌ': 'SOM',
-                'ጋምቤላ': 'GAM',
-                'ቤንሻንጉል ጉሙዝ': 'BEN',
-                'ሲዳማ': 'SID',}.get(region, 'OTH')
+            # The region is already validated by the form's choices
+            region = self.address_region
+            region_code_map = {
+                'አማራ': 'AMH', 'ኦሮሚያ': 'ORO', 'ትግራይ': 'TIG', 'አዲስ አበባ': 'AA',
+                'ድሬዳዋ': 'DD', 'ደቡብ ኢትዮጵያ': 'SOET', 'ደቡብ ምዕራብ ኢትዮጵያ': 'SWET',
+                'ሐረር': 'HAR', 'አፋር': 'AFR', 'ሶማሌ': 'SOM', 'ጋምቤላ': 'GAM',
+                'ቤኒሻንጉል ጉሙዝ': 'BEN', 'ሲዳማ': 'SID',
+            }
+            region_code = region_code_map.get(region, 'OTH')
             
-            # Find the highest existing number for this region and year
+            # Find the last member to determine the next sequence number
             last_member = Member.objects.filter(
                 address_region=self.address_region, 
                 join_date__year=current_year
@@ -114,39 +102,12 @@ class Member(models.Model):
             
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
 
-        # --- 2. Call the original save method NOW ---
-        # Now that the membership_id is set, we can save.
+        # Call the original save method to save the instance
         super().save(*args, **kwargs)
+    # =========================================================================
 
-        # --- 3. Create and Link User AFTER the member is saved ---
-        # We check if the user is already linked. This part only runs if it's not.
-        if not hasattr(self, 'user') or not self.user:
-            username = self.phone_number
-            if not User.objects.filter(username=username).exists():
-                print(f"Attempting to create user '{username}' for new member.")
-                password = "password123"
-                try:
-                    user = User.objects.create_user(
-                        username=username,
-                        password=password,
-                        email=self.email if self.email else ""
-                    )
-                    self.user = user
-                    # Save again just to update the user link
-                    super().save(update_fields=['user'])
-                    print(f"Successfully created and linked user '{username}'.")
-                except Exception as e:
-                    print(f"CRITICAL ERROR during user creation in model: {e}")
-            else:
-                 print(f"User '{username}' already exists. Linking.")
-                 try:
-                    self.user = User.objects.get(username=username)
-                    super().save(update_fields=['user'])
-                 except User.DoesNotExist:
-                    print(f"User '{username}' was supposed to exist but not found. Something is wrong.")
 # =========================================================================
-# 2. MEETING MODEL
-#    (Moved outside of Member model and save method)
+# 2. MEETING, ATTENDANCE, and ANNOUNCEMENT MODELS (No changes needed)
 # =========================================================================
 class Meeting(models.Model):
     title = models.CharField(max_length=255, verbose_name="የስብሰባው ርዕስ")
@@ -154,30 +115,18 @@ class Meeting(models.Model):
     meeting_date = models.DateTimeField(verbose_name="የስብሰባው ቀን እና ሰዓት")
     location = models.CharField(max_length=255, verbose_name="የስብሰባው ቦታ")
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="ፈጣሪ")
-    # related_name is necessary when using a ManyToManyField through a custom model
     attendees = models.ManyToManyField(Member, through='Attendance', related_name='attended_meetings', verbose_name="ተሰብሳቢዎች")
-
     def __str__(self):
         return self.title
 
-# =========================================================================
-# 3. ATTENDANCE MODEL
-#    (Moved outside of Member model and save method)
-# =========================================================================
 class Attendance(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, verbose_name="አባል")
     meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, verbose_name="ስብሰባ")
     attended_at = models.DateTimeField(auto_now_add=True, verbose_name="የተገኘበት ሰዓት")
-
     class Meta:
-        unique_together = ('member', 'meeting') # Ensure a member can't be marked as attendee twice for the same meeting
-        verbose_name_plural = "Attendances" # Better plural name in the admin
-
+        unique_together = ('member', 'meeting')
     def __str__(self):
         return f"{self.member.full_name} attended {self.meeting.title}"
-    # models.py
-
-# ... other classes ...
 
 class Announcement(models.Model):
     title = models.CharField(max_length=255, verbose_name="ርዕስ")
@@ -185,9 +134,7 @@ class Announcement(models.Model):
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="ደራሲ")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    class Meta:
+        ordering = ['-created_at']
     def __str__(self):
         return self.title
-
-    class Meta:
-        ordering = ['-created_at'] # Show the newest announcements first
