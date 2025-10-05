@@ -10,6 +10,9 @@ from datetime import datetime
 # 1. MEMBER MODEL
 # =========================================================================
 class Member(models.Model):
+# There should only be ONE primary key definition, ideally at the top.
+# id = models.AutoField(primary_key=True) # Django adds this by default, so we can remove it
+
     # --- Basic Information ---
     full_name = models.CharField(max_length=255, verbose_name="ሙሉ ስም")
     gender = models.CharField(max_length=10, choices=[('Male', 'ወንድ'), ('Female', 'ሴት')], verbose_name="ጾታ")
