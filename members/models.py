@@ -174,7 +174,6 @@ class Meeting(models.Model):
     def __str__(self):
         return self.title
 
----
 # =========================================================================
 # 3. ATTENDANCE MODEL
 # =========================================================================
@@ -190,8 +189,6 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.member.full_name} attended {self.meeting.title}"
-
----
 # =========================================================================
 # 4. ANNOUNCEMENT MODEL
 # =========================================================================
