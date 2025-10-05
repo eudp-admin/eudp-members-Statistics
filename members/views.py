@@ -30,52 +30,24 @@ def landing_page(request):
     if request.user.is_authenticated:
         return redirect('login_redirect')
     return render(request, 'members/landing_page.html')
-
 def register_member(request):
     if request.method == 'POST':
         form = MemberCreationForm(request.POST, request.FILES)
         if form.is_valid():
-            # 1. Don't save the form to the database yet
-            new_member = form.save(commit=False)
+            # Simply save the form. The model's save() method will handle EVERYTHING
+            # (creating the membership_id, creating the user, linking the user).
+            new_member = form.save()
             
-            username = new_member.phone_number
-            password = "password123"
-
-            # 2. Check if a user with this username (phone number) already exists
-            if User.objects.filter(username=username).exists():
-                messages.error(request, f"በዚህ ስልክ ቁጥር ({username}) የተመዘገበ ተጠቃሚ ከዚህ በፊት አለ።")
-                # Return to the form and show the error
-                return render(request, 'members/register_form.html', {'form': form})
-
-            try:
-                # 3. Save the Member object first (this will trigger the model's save() method to create the membership_id)
-                new_member.save()
-
-                # 4. Now, create the User account
-                user = User.objects.create_user(
-                    username=username,
-                    password=password,
-                    email=new_member.email if new_member.email else ""
-                )
-                
-                # 5. Link the new User to the Member profile and save again
-                new_member.user = user
-                new_member.save(update_fields=['user'])
-
-                print(f"SUCCESS: Directly created and linked user '{username}' in the view.")
-
-                # 6. Pass the confirmed credentials to the success page
-                request.session['new_username'] = username
-                request.session['new_password'] = password
-                
-                return redirect('registration_success')
-
-            except Exception as e:
-                # If anything goes wrong, inform the user
-                print(f"CRITICAL ERROR during user creation in view: {e}")
-                messages.error(request, "ምዝገባው ላይ ያልተጠበቀ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።")
-
-    else: # if request.method is GET
+            # Now that we are sure everything worked, pass the credentials to the session.
+            request.session['new_username'] = new_member.phone_number
+            request.session['new_password'] = "password123" 
+            
+            # Redirect to the success page.
+            return redirect('registration_success')
+        else:
+            # If the form is not valid, re-render the page with the form and its errors.
+             messages.error(request, "እባክዎ ፎርሙ ላይ ያሉትን ስህተቶች ያስተካክሉ።")
+    else:
         form = MemberCreationForm()
         
     context = {
@@ -83,6 +55,7 @@ def register_member(request):
         'page_title': 'አዲስ አባል መመዝገቢያ'
     }
     return render(request, 'members/register_form.html', context)
+    
 def registration_success(request):
     new_username = request.session.get('new_username', 'የለም')
     new_password = request.session.get('new_password', 'የለም')
