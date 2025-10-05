@@ -79,15 +79,12 @@ class Member(models.Model):
         return self.full_name
 
     def save(self, *args, **kwargs):
-        # This logic runs only when creating a NEW member for the first time
+        # Check if this is a new object being created (has no pk yet)
         if not self.pk:
-            # 1. Get the current year
+            # --- 1. Generate Membership ID FIRST ---
             current_year = datetime.now().year
-            
-            # 2. Get a 3-letter code for the region (Ensure consistent key/value case)
             region = self.address_region.upper()
-            region_code = {
-                'አማራ': 'AMH',
+            region_code = {'አማራ': 'AMH',
                 'ኦሮሚያ': 'ORO',
                 'ትግራይ': 'TIG',
                 'አዲስ አበባ': 'AA',
@@ -99,34 +96,54 @@ class Member(models.Model):
                 'ሶማሌ': 'SOM',
                 'ጋምቤላ': 'GAM',
                 'ቤንሻንጉል ጉሙዝ': 'BEN',
-                'ሲዳማ': 'SID',
-                'SOMALI': 'SOM', # Add common English names if they might be used
-                'AMHARA': 'AMH',
-                'OROMIA': 'ORO',
-                # Add other regions as needed...
-            }.get(region_name, 'OTH') # 'OTH' for other/unlisted regions
-
-            # 3. Find the last member registered in the same year to get the next number
-            # We simplify the filter here, checking only the year and region is redundant if the ID ensures uniqueness.
-            # However, to ensure sequential numbering PER region/year, we keep the original intent:
-             last_member_in_region_year = Member.objects.filter(
+                'ሲዳማ': 'SID',}.get(region, 'OTH')
+            
+            # Find the highest existing number for this region and year
+            last_member = Member.objects.filter(
                 address_region=self.address_region, 
                 join_date__year=current_year
             ).order_by('pk').last()
             
             new_seq_num = 1
-            if last_member_in_region_year and last_member_in_region_year.membership_id:
+            if last_member and last_member.membership_id:
                 try:
-                    last_seq_num = int(last_member_in_region_year.membership_id.split('-')[-1])
+                    last_seq_num = int(last_member.membership_id.split('-')[-1])
                     new_seq_num = last_seq_num + 1
                 except (ValueError, IndexError):
                     pass
             
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
 
-        # Call the original save method
+        # --- 2. Call the original save method NOW ---
+        # Now that the membership_id is set, we can save.
         super().save(*args, **kwargs)
 
+        # --- 3. Create and Link User AFTER the member is saved ---
+        # We check if the user is already linked. This part only runs if it's not.
+        if not hasattr(self, 'user') or not self.user:
+            username = self.phone_number
+            if not User.objects.filter(username=username).exists():
+                print(f"Attempting to create user '{username}' for new member.")
+                password = "password123"
+                try:
+                    user = User.objects.create_user(
+                        username=username,
+                        password=password,
+                        email=self.email if self.email else ""
+                    )
+                    self.user = user
+                    # Save again just to update the user link
+                    super().save(update_fields=['user'])
+                    print(f"Successfully created and linked user '{username}'.")
+                except Exception as e:
+                    print(f"CRITICAL ERROR during user creation in model: {e}")
+            else:
+                 print(f"User '{username}' already exists. Linking.")
+                 try:
+                    self.user = User.objects.get(username=username)
+                    super().save(update_fields=['user'])
+                 except User.DoesNotExist:
+                    print(f"User '{username}' was supposed to exist but not found. Something is wrong.")
 # =========================================================================
 # 2. MEETING MODEL
 #    (Moved outside of Member model and save method)
