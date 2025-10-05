@@ -156,10 +156,8 @@ class Member(models.Model):
                     self.user = User.objects.get(username=username)
                     super().save(update_fields=['user'])
                 except User.DoesNotExist:
-                    # print(f"User '{username}' was supposed to exist but not found. Something is wrong.") # Removed print for clean code
-                    pass
-
----
+                    print(f"User '{username}' was supposed to exist but not found. Something is wrong.") # Removed print for clean code
+                    
 # =========================================================================
 # 2. MEETING MODEL
 # =========================================================================
