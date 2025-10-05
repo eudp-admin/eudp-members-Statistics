@@ -85,7 +85,7 @@ class Member(models.Model):
             current_year = datetime.now().year
             
             # 2. Get a 3-letter code for the region (Ensure consistent key/value case)
-            region_name = self.address_region.strip().upper()
+            region = self.address_region.upper()
             region_code = {
                 'አማራ': 'AMH',
                 'ኦሮሚያ': 'ORO',
@@ -109,25 +109,22 @@ class Member(models.Model):
             # 3. Find the last member registered in the same year to get the next number
             # We simplify the filter here, checking only the year and region is redundant if the ID ensures uniqueness.
             # However, to ensure sequential numbering PER region/year, we keep the original intent:
-            last_member = Member.objects.filter(
+             last_member_in_region_year = Member.objects.filter(
                 address_region=self.address_region, 
-                join_date__year=current_year # join_date is auto_now_add=True, so this works
-            ).order_by('-pk').first()
+                join_date__year=current_year
+            ).order_by('pk').last()
             
             new_seq_num = 1
-            if last_member and last_member.membership_id:
+            if last_member_in_region_year and last_member_in_region_year.membership_id:
                 try:
-                    # Extract the sequence number from the ID (e.g., AMH-2024-0001 -> 1)
-                    last_seq_num = int(last_member.membership_id.split('-')[-1])
+                    last_seq_num = int(last_member_in_region_year.membership_id.split('-')[-1])
                     new_seq_num = last_seq_num + 1
                 except (ValueError, IndexError):
-                    # Fallback if ID format is unexpected
                     pass
             
-            # 4. Format the final Membership ID (e.g., AMH-2024-0001)
             self.membership_id = f"{region_code}-{current_year}-{new_seq_num:04d}"
 
-        # Call the original save method to save the instance
+        # Call the original save method
         super().save(*args, **kwargs)
 
 # =========================================================================
