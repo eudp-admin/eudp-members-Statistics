@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-@2w$&pr_dv^1h-efp=@in5w7+hckqql(6v=0e6#6on9gesmjn)')
 
 # FIX 1: Use environment variable for DEBUG. True for local, False for Render.
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+DEBUG = env.bool('DEBUG', default=False) 
 
 ALLOWED_HOSTS = []
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
